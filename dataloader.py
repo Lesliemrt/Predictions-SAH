@@ -30,8 +30,8 @@ class TrainDataset(Dataset):
                 transforms.RandomHorizontalFlip(p=0.25),
                 transforms.RandomVerticalFlip(p=0.10),
                 utils.sometimes(0.25, transforms.RandomResizedCrop(size=(self.img_size[1], self.img_size[2]), scale=(0.8, 1.0))),
-                utils.sometimes(0.5, transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))),
-                utils.sometimes(0.25, transforms.RandomAffine(degrees=0, scale=(0.8, 1.2)))  # Zoom
+                # utils.sometimes(0.25, transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))),
+                # utils.sometimes(0.25, transforms.RandomAffine(degrees=0, scale=(0.8, 1.2)))  # Zoom
 
                 # transforms.RandomHorizontalFlip(p=0.5),  # Fliplr
                 # transforms.RandomVerticalFlip(p=0.5),    # Flipud
@@ -191,7 +191,7 @@ test_dataset = TrainDataset(
 )
 
 # Visualize random images from training set before training
-# utils.visualize(1, train_df)
+utils.visualize(1, train_df)
 
 
 # Create DataLoaders

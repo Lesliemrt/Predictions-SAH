@@ -1,9 +1,12 @@
 #data
 hospital_data_1/
 
+#others
 *.h5
-*.xlsx
 **/__pycache__/
+
+non_existant_file.xlsx
+results.xlsx
 
 stage_2_sample_submission.csv
 stage_2_test/

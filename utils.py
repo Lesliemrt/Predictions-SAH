@@ -66,18 +66,20 @@ def sometimes(prob, transform):
 # Ajust the image paths
 def ajust_path(identifier):
     paciente, serie, imagen = identifier.split('-')
-    path = f"{configs.DATA_DIR}hospital data 1\\raw data\\{paciente}\\DICOM\\ST00001\\{serie}\\{imagen}"
+    path = f"{configs.DATA_DIR}hospital_data_1\\raw data\\{paciente}\\DICOM\\ST00001\\{serie}\\{imagen}"
     return path
 
 # Visualize random images from a dataset before training
 def visualize(num_images_to_show, train_df):
     for i in range(num_images_to_show):
         # random_index = np.random.randint(0, len(train_df))
-        random_index = 56
+        random_index = 11
         
+        print("chemin", os.path.exists(train_df['Path'].iloc[random_index]))
+        print("getsize", os.path.getsize(train_df['Path'].iloc[random_index]))
         img_path = train_df['Path'].iloc[random_index]
         label = train_df['ANY_Vasospasm'].iloc[random_index]
-        
+
         img = _read(img_path, (configs.CHANNELS,configs.HEIGHT, configs.WIDTH))
         
         plt.figure(figsize=(10, 5))
