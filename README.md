@@ -32,4 +32,5 @@ Test (data from hospital 1, Sofia's code) --> Tensorflow --> uc3m_tf_env
 |-cortes6.py --> to create choosed_slices
 |-choosed_slices.xlsx
 
+05/05
 

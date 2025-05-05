@@ -111,18 +111,18 @@ data_df = data_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
 patiente = 11 #index of {patiente} in the path
 unique_patients = data_df['Path'].apply(lambda x: x.split('\\')[patiente]).unique()
 
-# To remove once we have all the data
-missing_files = ['HSA 77', 'HSA 79', 'HSA 80', 'HSA 82',
- 'HSA 87', 'HSA 89', 'HSA 90', 'HSA 91', 'HSA 92', 'HSA 93', 'HSA 94', 'HSA 95',
- 'HSA 96', 'HSA 97', 'HSA 98', 'HSA 105', 'HSA 106', 'HSA 109', 'HSA 111',
- 'HSA 112', 'HSA 114', 'HSA 117', 'HSA 118', 'HSA 120', 'HSA 121', 'HSA 122',
- 'HSA 123', 'HSA 126', 'HSA 127', 'HSA 129', 'HSA 130', 'HSA 131', 'HSA 132',
- 'HSA 133', 'HSA 134', 'HSA 135', 'HSA 137', 'HSA 138', 'HSA 139', 'HSA 141',
- 'HSA 143', 'HSA 144', 'HSA 145A', 'HSA 145B', 'HSA 146', 'HSA 149', 'HSA 150',
- 'HSA 152', 'HSA 153', 'HSA 154', 'HSA 155', 'HSA 156', 'HSA 158', 'HSA 159',
- 'HSA 160', 'HSA 161', 'HSA 163', 'HSA 164', 'HSA 166', 'HSA 167', 'HSA 168',
- 'HSA 169', 'HSA 170', 'HSA 171', 'HSA 173', 'HSA 174', 'HSA 175']
-unique_patients = [p for p in unique_patients if p not in missing_files]
+# # To remove once we have all the data
+# missing_files = ['HSA 77', 'HSA 79', 'HSA 80', 'HSA 82',
+#  'HSA 87', 'HSA 89', 'HSA 90', 'HSA 91', 'HSA 92', 'HSA 93', 'HSA 94', 'HSA 95',
+#  'HSA 96', 'HSA 97', 'HSA 98', 'HSA 105', 'HSA 106', 'HSA 109', 'HSA 111',
+#  'HSA 112', 'HSA 114', 'HSA 117', 'HSA 118', 'HSA 120', 'HSA 121', 'HSA 122',
+#  'HSA 123', 'HSA 126', 'HSA 127', 'HSA 129', 'HSA 130', 'HSA 131', 'HSA 132',
+#  'HSA 133', 'HSA 134', 'HSA 135', 'HSA 137', 'HSA 138', 'HSA 139', 'HSA 141',
+#  'HSA 143', 'HSA 144', 'HSA 145A', 'HSA 145B', 'HSA 146', 'HSA 149', 'HSA 150',
+#  'HSA 152', 'HSA 153', 'HSA 154', 'HSA 155', 'HSA 156', 'HSA 158', 'HSA 159',
+#  'HSA 160', 'HSA 161', 'HSA 163', 'HSA 164', 'HSA 166', 'HSA 167', 'HSA 168',
+#  'HSA 169', 'HSA 170', 'HSA 171', 'HSA 173', 'HSA 174', 'HSA 175']
+# unique_patients = [p for p in unique_patients if p not in missing_files]
 
 print('unique_patients : ', unique_patients)
 
