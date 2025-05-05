@@ -30,13 +30,13 @@ class TrainDataset(Dataset):
                 transforms.RandomHorizontalFlip(p=0.25),
                 transforms.RandomVerticalFlip(p=0.10),
                 utils.sometimes(0.25, transforms.RandomResizedCrop(size=(self.img_size[1], self.img_size[2]), scale=(0.8, 1.0))),
-                # utils.sometimes(0.25, transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))),
-                # utils.sometimes(0.25, transforms.RandomAffine(degrees=0, scale=(0.8, 1.2)))  # Zoom
+                utils.sometimes(0.25, transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))),
+                utils.sometimes(0.25, transforms.RandomAffine(degrees=0, scale=(0.8, 1.2))),  # Zoom
 
                 # transforms.RandomHorizontalFlip(p=0.5),  # Fliplr
                 # transforms.RandomVerticalFlip(p=0.5),    # Flipud
-                # transforms.RandomRotation(degrees=20),   # Rotation
-                # transforms.ColorJitter(brightness=0.2),  # Brightness variation (≈ Multiply)
+                utils.sometimes(0.25, transforms.RandomRotation(degrees=20)),   # Rotation
+                utils.sometimes(0.25, transforms.ColorJitter(brightness=0.2)),  # Brightness variation (≈ Multiply)
                 # transforms.RandomAffine(degrees=0, scale=(0.8, 1.2)),  # Zoom
                 # transforms.RandomAffine(degrees=0, translate=(0.2, 0.2)),  # Translation
                 # transforms.RandomCrop(size=(self.img_size[1], self.img_size[2]),  # Crop
@@ -52,7 +52,7 @@ class TrainDataset(Dataset):
     def __getitem__(self, index):
         image_path = self.dataset['Path'].iloc[index]
 
-        image = utils._read(image_path, self.img_size)
+        image = utils._read(image_path)
 
         if image is None:
             raise FileNotFoundError(f"Image not found : {image_path}")
@@ -81,7 +81,7 @@ class TestDataset(Dataset):
     def __getitem__(self, index):
         image_path = self.df['Path'].iloc[index]
 
-        image = utils._read(image_path, self.img_size)
+        image = utils._read(image_path)
 
         if image is None:
             raise FileNotFoundError(f"Image not found : {image_path}")
@@ -124,6 +124,16 @@ unique_patients = data_df['Path'].apply(lambda x: x.split('\\')[patiente]).uniqu
 #  'HSA 169', 'HSA 170', 'HSA 171', 'HSA 173', 'HSA 174', 'HSA 175']
 # unique_patients = [p for p in unique_patients if p not in missing_files]
 
+count_0 = len(data_df[data_df["ANY_Vasospasm"] == 0])
+count_1 = len(data_df[data_df["ANY_Vasospasm"] == 1])
+print("data_df before removing wrong paths : ","count 1 : ", count_1, "count 0 : ", count_0)
+# Remove unexistant file/ path from data_df : 
+data_df = data_df[data_df['Path'].apply(os.path.exists)]
+
+count_0 = len(data_df[data_df["ANY_Vasospasm"] == 0])
+count_1 = len(data_df[data_df["ANY_Vasospasm"] == 1])
+print("data_df after : ","count 1 : ", count_1, "count 0 : ", count_0)
+
 print('unique_patients : ', unique_patients)
 
 np.random.seed(configs.SEED)
@@ -145,10 +155,10 @@ test_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in tes
 # Oversampling for class 1 (~ 15% of 1) only for training !!
 
 # Method oversampling 1 (nb class 1 = nb class 0)
-count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
-df_oversampled = train_df[train_df["ANY_Vasospasm"] == 1].sample(count_0, replace=True, random_state=configs.SEED)
-df_balanced = pd.concat([train_df[train_df["ANY_Vasospasm"] == 0], df_oversampled])
-train_df = df_balanced.sample(frac=1, random_state=configs.SEED).reset_index(drop=True)
+# count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
+# df_oversampled = train_df[train_df["ANY_Vasospasm"] == 1].sample(count_0, replace=True, random_state=configs.SEED)
+# df_balanced = pd.concat([train_df[train_df["ANY_Vasospasm"] == 0], df_oversampled])
+# train_df = df_balanced.sample(frac=1, random_state=configs.SEED).reset_index(drop=True)
 
 
 # Method oversampling 2 (double class 1)
@@ -191,7 +201,7 @@ test_dataset = TrainDataset(
 )
 
 # Visualize random images from training set before training
-utils.visualize(1, train_df)
+utils.visualize(3, train_df)
 
 
 # Create DataLoaders

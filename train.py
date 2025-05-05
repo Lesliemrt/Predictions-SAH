@@ -111,7 +111,7 @@ class Model_extented(nn.Module):
                 img_path = df['Path'].iloc[random_index]
                 label = df['ANY_Vasospasm'].iloc[random_index]
 
-                img = utils._read(img_path, (configs.CHANNELS,configs.HEIGHT, configs.WIDTH))
+                img = utils._read(img_path)
 
                 img = img.float().unsqueeze(0).to(self.device)
                 output = self.forward(img)

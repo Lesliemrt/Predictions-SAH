@@ -22,7 +22,6 @@ def window_image(dcm, window_center, window_width):
         correct_dcm(dcm)
     img = dcm.pixel_array.astype(np.float32) * dcm.RescaleSlope + dcm.RescaleIntercept
 
-
     # Resize
     img = torch.from_numpy(img).unsqueeze(0).unsqueeze(0)  # shape [1, 1, H, W]
     img = F.interpolate(img, size=(configs.HEIGHT, configs.WIDTH)[:2], mode='bilinear', align_corners=False)
@@ -44,19 +43,18 @@ def bsb_window(dcm):
     bsb_img = torch.stack([brain_img, subdural_img, soft_img])
     return bsb_img
 
-non_existant_file=[]
-def _read(path, SHAPE):
-    try:
-        dcm = pydicom.dcmread(path)
-    except Exception as e:
-        # to delete when we will have all hospital data
-        last_files=path.split(os.sep)[-5:]
-        if last_files not in non_existant_file:
-            non_existant_file.append(last_files)
+def _read(path):
+    dcm = pydicom.dcmread(path)
+    # except Exception as e:
+    #     # to delete when we will have all hospital data
+    #     path_end=path.split(os.sep)[-5:]
+    #     if path_end not in non_existant_file:
+    #         non_existant_file.append(path_end)
     try:
         img = bsb_window(dcm)
     except Exception as e:
-        img = torch.zeros((configs.CHANNELS, configs.HEIGHT, configs.WIDTH))
+        # img = torch.zeros((configs.CHANNELS, configs.HEIGHT, configs.WIDTH))
+        img = None
     return img
 
 # Image Augmentation
@@ -72,15 +70,12 @@ def ajust_path(identifier):
 # Visualize random images from a dataset before training
 def visualize(num_images_to_show, train_df):
     for i in range(num_images_to_show):
-        # random_index = np.random.randint(0, len(train_df))
-        random_index = 11
+        random_index = np.random.randint(0, len(train_df))
         
-        print("chemin", os.path.exists(train_df['Path'].iloc[random_index]))
-        print("getsize", os.path.getsize(train_df['Path'].iloc[random_index]))
         img_path = train_df['Path'].iloc[random_index]
         label = train_df['ANY_Vasospasm'].iloc[random_index]
 
-        img = _read(img_path, (configs.CHANNELS,configs.HEIGHT, configs.WIDTH))
+        img = _read(img_path)
         
         plt.figure(figsize=(10, 5))
         img = img.permute(1, 2, 0).cpu().numpy()

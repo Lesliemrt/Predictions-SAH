@@ -25,7 +25,7 @@ trainloader, validloader, testloader = create_dataloader()
 # Load model
 from model import get_model
 model = get_model(prob=0.5)  #prob = prob for dropout
-my_model=Model_extented(model, epochs=8, lr=1e-3)
+my_model=Model_extented(model, epochs=4, lr=1e-3)
 
 # Training
 my_model.trainloop(trainloader, validloader, testloader)
@@ -57,8 +57,8 @@ df = pd.DataFrame(train.results, columns=['True', "Predict"])
 df.to_excel('results.xlsx', index=False)
 
 # Save the missing data in a file for later
-df = pd.DataFrame(utils.non_existant_file, columns=['Missing patient', "-", "ST", "SE", "IM"])
-df.to_excel('non_existant_file.xlsx', index=False)
+# df = pd.DataFrame(utils.non_existant_file, columns=['Missing patient', "-", "ST", "SE", "IM"])
+# df.to_excel('non_existant_file.xlsx', index=False)
 
 
 
