@@ -5,7 +5,8 @@ import os
 import pandas as pd
 import numpy as np
 import cv2
-from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
+# from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
+from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, WeightedRandomSampler
 
 import configs
@@ -106,59 +107,64 @@ new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
 data_df = new_label_df[['ANY Vasoespasm ','Path']]
 data_df = data_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
 
-
-# Get patient without duplicates
 patiente = 11 #index of {patiente} in the path
-unique_patients = data_df['Path'].apply(lambda x: x.split('\\')[patiente]).unique()
 
-# # To remove once we have all the data
-# missing_files = ['HSA 77', 'HSA 79', 'HSA 80', 'HSA 82',
-#  'HSA 87', 'HSA 89', 'HSA 90', 'HSA 91', 'HSA 92', 'HSA 93', 'HSA 94', 'HSA 95',
-#  'HSA 96', 'HSA 97', 'HSA 98', 'HSA 105', 'HSA 106', 'HSA 109', 'HSA 111',
-#  'HSA 112', 'HSA 114', 'HSA 117', 'HSA 118', 'HSA 120', 'HSA 121', 'HSA 122',
-#  'HSA 123', 'HSA 126', 'HSA 127', 'HSA 129', 'HSA 130', 'HSA 131', 'HSA 132',
-#  'HSA 133', 'HSA 134', 'HSA 135', 'HSA 137', 'HSA 138', 'HSA 139', 'HSA 141',
-#  'HSA 143', 'HSA 144', 'HSA 145A', 'HSA 145B', 'HSA 146', 'HSA 149', 'HSA 150',
-#  'HSA 152', 'HSA 153', 'HSA 154', 'HSA 155', 'HSA 156', 'HSA 158', 'HSA 159',
-#  'HSA 160', 'HSA 161', 'HSA 163', 'HSA 164', 'HSA 166', 'HSA 167', 'HSA 168',
-#  'HSA 169', 'HSA 170', 'HSA 171', 'HSA 173', 'HSA 174', 'HSA 175']
-# unique_patients = [p for p in unique_patients if p not in missing_files]
+# unique_patients = data_df['Path'].apply(lambda x: x.split('\\')[patiente]).unique()
+# print('unique_patients : ', unique_patients)
 
+# Remove unexistant file/ path from data_df : 
 count_0 = len(data_df[data_df["ANY_Vasospasm"] == 0])
 count_1 = len(data_df[data_df["ANY_Vasospasm"] == 1])
 print("data_df before removing wrong paths : ","count 1 : ", count_1, "count 0 : ", count_0)
-# Remove unexistant file/ path from data_df : 
+
 data_df = data_df[data_df['Path'].apply(os.path.exists)]
 
 count_0 = len(data_df[data_df["ANY_Vasospasm"] == 0])
 count_1 = len(data_df[data_df["ANY_Vasospasm"] == 1])
 print("data_df after : ","count 1 : ", count_1, "count 0 : ", count_0)
 
-print('unique_patients : ', unique_patients)
+# np.random.shuffle(unique_patients)
 
-np.random.seed(configs.SEED)
-np.random.shuffle(unique_patients)
+# split_idx_train = int(len(unique_patients) * configs.split_train)
+# split_idx_valid = int(len(unique_patients) * (configs.split_train + configs.split_valid))
 
-split_idx_train = int(len(unique_patients) * configs.split_train)
-split_idx_valid = int(len(unique_patients) * (configs.split_train + configs.split_valid))
+# train_patients = unique_patients[:split_idx_train]
+# valid_patients = unique_patients[split_idx_train:split_idx_valid]
+# test_patients = unique_patients[split_idx_valid:]
 
-train_patients = unique_patients[:split_idx_train]
-valid_patients = unique_patients[split_idx_train:split_idx_valid]
-test_patients = unique_patients[split_idx_valid:]
+# Stratified split in patients 
+patient_df = data_df.copy()
+patient_df["ID"] = patient_df["Path"].apply(lambda x: x.split('\\')[patiente])
+patient_df = patient_df.groupby("ID")["ANY_Vasospasm"].max().reset_index()  # label = 1 if at least one image is positive
+
+train_patients, val_test_patients = train_test_split(
+    patient_df,
+    train_size=configs.split_train,
+    stratify=patient_df["ANY_Vasospasm"],
+    random_state=configs.SEED
+)
+
+test_size = configs.split_test/(configs.split_valid + configs.split_test)
+
+valid_patients, test_patients = train_test_split(
+    val_test_patients,
+    test_size=test_size,
+    stratify=val_test_patients["ANY_Vasospasm"],
+    random_state=configs.SEED
+)
 
 # Create DataFrames
-train_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in train_patients)]
-valid_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in valid_patients)]
-test_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in test_patients)]
+train_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in train_patients["ID"].values)]
+valid_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in valid_patients["ID"].values)]
+test_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in test_patients["ID"].values)]
 
-
-# Oversampling for class 1 (~ 15% of 1) only for training !!
+# Oversampling for class 1 (~ 28% of 1) only for training !!
 
 # Method oversampling 1 (nb class 1 = nb class 0)
-# count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
-# df_oversampled = train_df[train_df["ANY_Vasospasm"] == 1].sample(count_0, replace=True, random_state=configs.SEED)
-# df_balanced = pd.concat([train_df[train_df["ANY_Vasospasm"] == 0], df_oversampled])
-# train_df = df_balanced.sample(frac=1, random_state=configs.SEED).reset_index(drop=True)
+count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
+df_oversampled = train_df[train_df["ANY_Vasospasm"] == 1].sample(count_0, replace=True, random_state=configs.SEED)
+df_balanced = pd.concat([train_df[train_df["ANY_Vasospasm"] == 0], df_oversampled])
+train_df = df_balanced.sample(frac=1, random_state=configs.SEED).reset_index(drop=True)
 
 
 # Method oversampling 2 (double class 1)
@@ -201,7 +207,7 @@ test_dataset = TrainDataset(
 )
 
 # Visualize random images from training set before training
-utils.visualize(3, train_df)
+# utils.visualize(3, train_df)
 
 
 # Create DataLoaders

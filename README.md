@@ -15,8 +15,9 @@ Pre-project (data from RSNA 2019) --> uc3m_env
 Project --> uc3m_env
 |-hospital data 1
   |-raw data
-  |-excel_predicciones.xlsx
+|-excel_predicciones.xlsx
 |-main.py --> import model or model_many_layers
+|-main_40_iterations
 |-configs.py (constants + directory)
 |-utils.py
 |-dataloader.py
