@@ -14,11 +14,11 @@ all_tpr = []
 auc_values = []
 lw = 2 #line width
 
-nb_iterations = 2
+nb_iterations = 3
 for k in range(nb_iterations):
 
     configs.SEED = np.random.randint(10000, 99999)
-    print(f"===== ITERATION {k} ---- SEED = {configs.SEED}")
+    print(f"=========== ITERATION {k} ------ SEED = {configs.SEED}")
 
     # For reproductibility
     np.random.seed(configs.SEED)
@@ -31,7 +31,7 @@ for k in range(nb_iterations):
     trainloader, validloader, testloader = dataloader.create_dataloader()
 
     # Load model
-    from model import get_model
+    from model_many_layers import get_model
     model = get_model(prob=0.5)  #prob = prob for dropout
     my_model=Model_extented(model, epochs=4, lr=1e-3)
 

@@ -38,7 +38,7 @@ class Model(nn.Module):
         x = self.linear7(x)
         return x
 
-def get_model(prob=0.15):    
+def get_model(prob=0.5):    
     model = models.densenet169(pretrained=True) # pretrained on ImageNet
 
     # Freeze parameters so we don't backprop through them

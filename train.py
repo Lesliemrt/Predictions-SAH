@@ -8,6 +8,9 @@ from torch import nn
 from sklearn.metrics import roc_auc_score, roc_curve, auc, classification_report
 from torchmetrics.classification import BinaryRecall
 from torch.optim.lr_scheduler import StepLR
+from pytorch_grad_cam import GradCAM
+from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+from pytorch_grad_cam.utils.image import show_cam_on_image
 
 from dataloader import create_dataloader
 import configs
@@ -77,7 +80,6 @@ class Model_extented(nn.Module):
         
 
     def eval_performance(self,dataloader):
-        # loss = 0
         accuracy = 0
         recall_metric = BinaryRecall(threshold=0.5).to(self.device)
         self.model.eval()
@@ -159,6 +161,32 @@ class Model_extented(nn.Module):
             break  # Only one image
         self.model.train()
     
+    def gradcam(self, dataloader, index):
+        self.model.eval()
+        for inputs, _ in dataloader:
+            input_img = inputs[index].unsqueeze(0).float().to(self.device)
+            break #just for one image
+        model = self.model
+        target_layers = [model.features[-1]]
+        input_tensor =input_img
+        img_np = input_img.detach().cpu().squeeze().permute(1, 2, 0).numpy() # to visualize initial image
+        # We have to specify the target we want to generate the CAM for.
+        targets = [ClassifierOutputTarget(0)]  # Visualise la "classe positive"
+
+        with GradCAM(model=model, target_layers=target_layers) as cam:
+            # You can also pass aug_smooth=True and eigen_smooth=True, to apply smoothing.
+            grayscale_cam = cam(input_tensor=input_tensor, targets=targets)
+            # In this example grayscale_cam has only one image in the batch:
+            grayscale_cam = grayscale_cam[0, :]
+            visualization = show_cam_on_image(img_np, grayscale_cam, use_rgb=True)
+            # You can also get the model outputs without having to redo inference
+            model_outputs = cam.outputs
+
+        plt.imshow(visualization)
+        plt.axis("off")
+        plt.title("Grad-CAM")
+        plt.show()        
+    
     def auc_roc(self, dataloader):
         self.model.eval()
         all_labels = []
@@ -222,7 +250,6 @@ class Model_extented(nn.Module):
         all_labels = torch.cat(all_labels).numpy()
         all_probs = torch.cat(all_probs).numpy()
 
-        # roc_auc_score = roc_auc_score(all_labels, all_probs)
         fpr, tpr, thresholds = roc_curve(all_labels, all_probs) #false positiv rate and true positiv rate
         roc_auc = auc(fpr, tpr) # same as roc_auc_score but different method
 

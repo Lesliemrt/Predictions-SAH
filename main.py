@@ -42,10 +42,11 @@ eval_performance_valid = my_model.eval_performance(validloader)
 print(f"accuracy/len(trainloader) : {eval_performance_train[0]}, recall : {eval_performance_train[1]}")
 print(f"accuracy/len(validloader) : {eval_performance_valid[0]}, recall : {eval_performance_valid[1]}")
 
-
-
 # Saliency maps
 print(my_model.saliency(testloader, index=0))
+
+# Grad cam
+print(my_model.gradcam(testloader, index = 0))
 
 # print(my_model.visualize_predictions(train_df, 10))
 
