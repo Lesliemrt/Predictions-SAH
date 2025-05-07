@@ -4,11 +4,8 @@ import torch
 import pandas as pd
 
 from configs import SEED
-from configs import DATA_DIR
-from dataloader import create_dataloader
-from dataloader import test_df
-from dataloader import train_df
 from train import Model_extented
+import dataloader
 import utils
 import train
 
@@ -20,7 +17,7 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
 # Load data
-trainloader, validloader, testloader = create_dataloader()
+trainloader, validloader, testloader = dataloader.create_dataloader()
 
 # Load model
 from model import get_model
@@ -40,15 +37,17 @@ plt.plot(my_model.loss_during_training,label='Training Loss')
 plt.plot(my_model.valid_loss_during_training,label='Validation Loss')
 plt.legend()
 
-print("accuracy/len(trainloader), recall : ", my_model.eval_performance(trainloader))
-print("accuracy/len(validloader), recall : ", my_model.eval_performance(validloader))
+eval_performance_train = my_model.eval_performance(trainloader)
+eval_performance_valid = my_model.eval_performance(validloader)
+print(f"accuracy/len(trainloader) : {eval_performance_train[0]}, recall : {eval_performance_train[1]}")
+print(f"accuracy/len(validloader) : {eval_performance_valid[0]}, recall : {eval_performance_valid[1]}")
 
 
 
 # Saliency maps
 print(my_model.saliency(testloader, index=0))
 
-print(my_model.visualize_predictions(train_df, 10))
+# print(my_model.visualize_predictions(train_df, 10))
 
 print("auc_roc : ",my_model.auc_roc(testloader))
 

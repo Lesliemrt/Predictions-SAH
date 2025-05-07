@@ -180,10 +180,10 @@ class Model_extented(nn.Module):
         print("Classification report at threshold 0.5:")
         print(classification_report(all_labels, predicted_labels))
 
-        test_auc_roc = roc_auc_score(all_labels, all_probs)
+        roc_auc_score = roc_auc_score(all_labels, all_probs)
 
         fpr, tpr, thresholds = roc_curve(all_labels, all_probs) #false positiv rate and true positiv rate
-        roc_auc = auc(fpr, tpr)
+        roc_auc = auc(fpr, tpr) # same as roc_auc_score but different method
 
         plt.figure(figsize=(12, 6))
 
@@ -203,7 +203,32 @@ class Model_extented(nn.Module):
 
         self.model.train()
 
-        return test_auc_roc
+        return roc_auc_score
+    
+    def auc_roc_iteration(self, dataloader):
+        self.model.eval()
+        all_labels = []
+        all_probs = []
+        with torch.no_grad():
+            for inputs, labels in dataloader:
+                inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
+                outputs = self.forward(inputs)
+                probs = torch.sigmoid(outputs)
+
+                all_labels.append(labels.cpu())
+                all_probs.append(probs.cpu())
+
+        # Concatenate all batchs
+        all_labels = torch.cat(all_labels).numpy()
+        all_probs = torch.cat(all_probs).numpy()
+
+        # roc_auc_score = roc_auc_score(all_labels, all_probs)
+        fpr, tpr, thresholds = roc_curve(all_labels, all_probs) #false positiv rate and true positiv rate
+        roc_auc = auc(fpr, tpr) # same as roc_auc_score but different method
+
+        self.model.train()
+
+        return roc_auc, fpr, tpr
 
 
 

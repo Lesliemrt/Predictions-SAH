@@ -98,7 +98,6 @@ class TestDataset(Dataset):
 
 
 """TRAINING VALID AND TEST DATASET"""
-    
 # Read the excel with new label
 new_label_df = pd.read_excel('excel_predicciones.xlsx', sheet_name='selected_cortes')
 new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
@@ -137,83 +136,82 @@ patient_df = data_df.copy()
 patient_df["ID"] = patient_df["Path"].apply(lambda x: x.split('\\')[patiente])
 patient_df = patient_df.groupby("ID")["ANY_Vasospasm"].max().reset_index()  # label = 1 if at least one image is positive
 
-train_patients, val_test_patients = train_test_split(
-    patient_df,
-    train_size=configs.split_train,
-    stratify=patient_df["ANY_Vasospasm"],
-    random_state=configs.SEED
-)
-
-test_size = configs.split_test/(configs.split_valid + configs.split_test)
-
-valid_patients, test_patients = train_test_split(
-    val_test_patients,
-    test_size=test_size,
-    stratify=val_test_patients["ANY_Vasospasm"],
-    random_state=configs.SEED
-)
-
-# Create DataFrames
-train_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in train_patients["ID"].values)]
-valid_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in valid_patients["ID"].values)]
-test_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in test_patients["ID"].values)]
-
-# Oversampling for class 1 (~ 28% of 1) only for training !!
-
-# Method oversampling 1 (nb class 1 = nb class 0)
-count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
-df_oversampled = train_df[train_df["ANY_Vasospasm"] == 1].sample(count_0, replace=True, random_state=configs.SEED)
-df_balanced = pd.concat([train_df[train_df["ANY_Vasospasm"] == 0], df_oversampled])
-train_df = df_balanced.sample(frac=1, random_state=configs.SEED).reset_index(drop=True)
-
-
-# Method oversampling 2 (double class 1)
-# vasospasm_df = train_df[train_df["ANY_Vasospasm"] == 1]
-# train_oversample_df = pd.concat([train_df, vasospasm_df])
-# train_df = train_oversample_df
-
-count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
-count_1 = len(train_df[train_df["ANY_Vasospasm"] == 1])
-print("count 1 train : ", count_1, "count 0 train : ", count_0)
-
-# Labels 'ANY_Vasospasm'
-train_labels = train_df["ANY_Vasospasm"]
-valid_labels = valid_df["ANY_Vasospasm"]
-test_labels = test_df["ANY_Vasospasm"]
-
-
-# Train Dataset
-train_dataset = TrainDataset(
-    dataset=train_df,
-    labels=train_labels,
-    batch_size=configs.TRAIN_BATCH_SIZE,
-    augment=True
-)
-
-# Validation Dataset
-valid_dataset = TrainDataset(
-    dataset=valid_df,
-    labels=valid_labels,
-    batch_size=configs.VALID_BATCH_SIZE,
-    augment=False
-)
-
-# Test Dataset
-test_dataset = TrainDataset(
-    dataset=test_df,
-    labels=test_labels,
-    batch_size=configs.TEST_BATCH_SIZE,
-    augment=False
-)
-
-# Visualize random images from training set before training
-# utils.visualize(3, train_df)
-
-
-# Create DataLoaders
+# Everything inside create_dataloader to be able to change the seed with main_40_iterations
 def create_dataloader():
+    train_patients, val_test_patients = train_test_split(
+        patient_df,
+        train_size=configs.split_train,
+        stratify=patient_df["ANY_Vasospasm"],
+        random_state=configs.SEED
+    )
+
+    test_size = configs.split_test/(configs.split_valid + configs.split_test)
+
+    valid_patients, test_patients = train_test_split(
+        val_test_patients,
+        test_size=test_size,
+        stratify=val_test_patients["ANY_Vasospasm"],
+        random_state=configs.SEED
+    )
+
+    # Create DataFrames
+    train_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in train_patients["ID"].values)]
+    valid_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in valid_patients["ID"].values)]
+    test_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in test_patients["ID"].values)]
+
+    # Oversampling for class 1 (~ 28% of 1) only for training !!
+
+    # Method oversampling 1 (nb class 1 = nb class 0)
+    count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
+    df_oversampled = train_df[train_df["ANY_Vasospasm"] == 1].sample(count_0, replace=True, random_state=configs.SEED)
+    df_balanced = pd.concat([train_df[train_df["ANY_Vasospasm"] == 0], df_oversampled])
+    train_df = df_balanced.sample(frac=1, random_state=configs.SEED).reset_index(drop=True)
+
+    # Method oversampling 2 (double class 1)
+    # vasospasm_df = train_df[train_df["ANY_Vasospasm"] == 1]
+    # train_oversample_df = pd.concat([train_df, vasospasm_df])
+    # train_df = train_oversample_df
+
+    count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
+    count_1 = len(train_df[train_df["ANY_Vasospasm"] == 1])
+    print("count 1 train : ", count_1, "count 0 train : ", count_0)
+
+    # Labels 'ANY_Vasospasm'
+    train_labels = train_df["ANY_Vasospasm"]
+    valid_labels = valid_df["ANY_Vasospasm"]
+    test_labels = test_df["ANY_Vasospasm"]
+
+    # Train Dataset
+    train_dataset = TrainDataset(
+        dataset=train_df,
+        labels=train_labels,
+        batch_size=configs.TRAIN_BATCH_SIZE,
+        augment=True
+    )
+
+    # Validation Dataset
+    valid_dataset = TrainDataset(
+        dataset=valid_df,
+        labels=valid_labels,
+        batch_size=configs.VALID_BATCH_SIZE,
+        augment=False
+    )
+
+    # Test Dataset
+    test_dataset = TrainDataset(
+        dataset=test_df,
+        labels=test_labels,
+        batch_size=configs.TEST_BATCH_SIZE,
+        augment=False
+    )
+
+    # Visualize random images from training set before training
+    # utils.visualize(3, train_df)
+
+    # Create DataLoaders
     trainloader = DataLoader(train_dataset, batch_size=configs.TRAIN_BATCH_SIZE, shuffle=True)
     validloader = DataLoader(valid_dataset, batch_size=configs.VALID_BATCH_SIZE, shuffle=False)
     testloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
+
     return trainloader, validloader, testloader
 
