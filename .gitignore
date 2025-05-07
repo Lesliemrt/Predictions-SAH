@@ -5,12 +5,26 @@ hospital_data_1/
 *.h5
 **/__pycache__/
 
+#results (not useful)
 non_existant_file.xlsx
 results.xlsx
 
+#data
 stage_2_sample_submission.csv
 stage_2_test/
 stage_2_train.csv
 stage_2_train/
 hospital_data_1/
 *.csv
+
+#old model
+pytorch_prepared_model_(densenet169)_leslie.py
+
+#old dataloader
+dataloader_RSNA.py
+
+#sofia's work
+todaspredicciones.py
+cortes6.py
+choosed_slices.xlsx
+
