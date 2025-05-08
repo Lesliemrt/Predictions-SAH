@@ -163,11 +163,16 @@ class Model_extented(nn.Module):
     
     def gradcam(self, dataloader, index):
         self.model.eval()
+        print("debut gradcam")
         for inputs, _ in dataloader:
             input_img = inputs[index].unsqueeze(0).float().to(self.device)
+            input_img.requires_grad = True
             break #just for one image
         model = self.model
-        target_layers = [model.features[-1]]
+        # target_layers = [model.features[-2].conv2] #(conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        target_layers = [model.features[-2].denselayer32.conv2]
+        print("Target layer:", target_layers)
+        print("Target layer type:", type(target_layers))
         input_tensor =input_img
         img_np = input_img.detach().cpu().squeeze().permute(1, 2, 0).numpy() # to visualize initial image
         # We have to specify the target we want to generate the CAM for.
@@ -175,6 +180,8 @@ class Model_extented(nn.Module):
 
         with GradCAM(model=model, target_layers=target_layers) as cam:
             # You can also pass aug_smooth=True and eigen_smooth=True, to apply smoothing.
+            print("Input tensor shape:", input_tensor.shape)         # Doit être [1, C, H, W]
+            print("Requires grad:", input_tensor.requires_grad)      # Doit être True
             grayscale_cam = cam(input_tensor=input_tensor, targets=targets)
             # In this example grayscale_cam has only one image in the batch:
             grayscale_cam = grayscale_cam[0, :]
@@ -208,7 +215,7 @@ class Model_extented(nn.Module):
         print("Classification report at threshold 0.5:")
         print(classification_report(all_labels, predicted_labels))
 
-        roc_auc_score = roc_auc_score(all_labels, all_probs)
+        roc_auc_score_ = roc_auc_score(all_labels, all_probs)
 
         fpr, tpr, thresholds = roc_curve(all_labels, all_probs) #false positiv rate and true positiv rate
         roc_auc = auc(fpr, tpr) # same as roc_auc_score but different method
@@ -231,7 +238,7 @@ class Model_extented(nn.Module):
 
         self.model.train()
 
-        return roc_auc_score
+        return roc_auc_score_
     
     def auc_roc_iteration(self, dataloader):
         self.model.eval()

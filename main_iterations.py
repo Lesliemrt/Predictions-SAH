@@ -12,6 +12,8 @@ import configs
 all_fpr = []
 all_tpr = []
 auc_values = []
+training_accuracy_values = []
+validation_accuracy_values = []
 lw = 2 #line width
 
 nb_iterations = 3
@@ -43,17 +45,10 @@ for k in range(nb_iterations):
     # plt.plot(my_model.valid_loss_during_training,label='Validation Loss')
     # plt.legend()
 
-    # print("accuracy/len(trainloader), recall : ", my_model.eval_performance(trainloader))
-    # print("accuracy/len(validloader), recall : ", my_model.eval_performance(validloader))
-
-    # # Saliency maps
-    # print(my_model.saliency(testloader, index=0))
-
-    # print(my_model.visualize_predictions(train_df, 10))
-
-    # print("auc_roc : ",my_model.auc_roc(testloader))
-
     # Add the values of each iteration to lists :
+    training_accuracy_values.append(my_model.eval_performance(trainloader)[0])
+    validation_accuracy_values.append(my_model.eval_performance(validloader)[0])
+
     results_auc_roc = my_model.auc_roc_iteration(testloader)
     auc_values.append(results_auc_roc[0])
     fpr = results_auc_roc[1]
@@ -61,13 +56,12 @@ for k in range(nb_iterations):
 
     plt.plot(fpr, tpr, lw=lw, label=f'Seed {configs.SEED} (AUC = {results_auc_roc[0]:.2f})')
 
-    # See the results
-    # df = pd.DataFrame(train.results, columns=['True', "Predict"])
-    # df.to_excel('results.xlsx', index=False)
-
 avg_roc_auc = np.mean(auc_values)
 print("Average ROC AUC:", avg_roc_auc)
 
+avg_train_accuracy = np.mean(training_accuracy_values)
+avg_valid_accuracy = np.mean(validation_accuracy_values)
+print(f"Average training accuracy : {avg_train_accuracy}, Average validation accuracy : {avg_valid_accuracy}")
 
 # Plot the curve
 plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')

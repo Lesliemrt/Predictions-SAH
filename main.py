@@ -22,7 +22,7 @@ trainloader, validloader, testloader = dataloader.create_dataloader()
 # Load model
 from model import get_model
 model = get_model(prob=0.5)  #prob = prob for dropout
-my_model=Model_extented(model, epochs=4, lr=1e-3)
+my_model=Model_extented(model, epochs=6, lr=1e-3)
 
 # Training
 my_model.trainloop(trainloader, validloader, testloader)

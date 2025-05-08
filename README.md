@@ -8,7 +8,7 @@ Project
 |-hospital_data_1  
 |-excel_predicciones.xlsx --> "selected_cortes" sheet for labels    
 |-main.py --> import model or model_many_layers  
-|-main_iterations --> test on different seed  
+|-main_iterations --> aucroc curve for different seed  
 |-configs.py (constants + directory)  
 |-utils.py  
 |-dataloader.py  
