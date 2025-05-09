@@ -40,7 +40,7 @@ class Model_extented(nn.Module):
         self.model.train()
         scheduler = StepLR(self.optim, step_size=2, gamma=0.5) # Every 2 epochs, split lr by 2
         for epoch in range (self.epochs):
-            print(f'=========== EPOCH {epoch}')
+            print(f'=========== EPOCH {epoch}/{self.epochs-1}')
             start_time = time.time()
             running_loss = 0.0
             for inputs, labels in trainloader:
@@ -168,31 +168,48 @@ class Model_extented(nn.Module):
             input_img = inputs[index].unsqueeze(0).float().to(self.device)
             input_img.requires_grad = True
             break #just for one image
-        model = self.model
-        # target_layers = [model.features[-2].conv2] #(conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-        target_layers = [model.features[-2].denselayer32.conv2]
-        print("Target layer:", target_layers)
-        print("Target layer type:", type(target_layers))
         input_tensor =input_img
         img_np = input_img.detach().cpu().squeeze().permute(1, 2, 0).numpy() # to visualize initial image
         # We have to specify the target we want to generate the CAM for.
         targets = [ClassifierOutputTarget(0)]  # Visualise la "classe positive"
 
-        with GradCAM(model=model, target_layers=target_layers) as cam:
-            # You can also pass aug_smooth=True and eigen_smooth=True, to apply smoothing.
-            print("Input tensor shape:", input_tensor.shape)         # Doit être [1, C, H, W]
-            print("Requires grad:", input_tensor.requires_grad)      # Doit être True
-            grayscale_cam = cam(input_tensor=input_tensor, targets=targets)
-            # In this example grayscale_cam has only one image in the batch:
-            grayscale_cam = grayscale_cam[0, :]
-            visualization = show_cam_on_image(img_np, grayscale_cam, use_rgb=True)
-            # You can also get the model outputs without having to redo inference
-            model_outputs = cam.outputs
+        # target_layers = [model.features[-2].denselayer8.conv2] #(denselayer32) : ... (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        # print("Target layer:", target_layers)
 
-        plt.imshow(visualization)
-        plt.axis("off")
-        plt.title("Grad-CAM")
-        plt.show()        
+        # with GradCAM(model=model, target_layers=target_layers) as cam:
+        #     # You can also pass aug_smooth=True and eigen_smooth=True, to apply smoothing.
+        #     grayscale_cam = cam(input_tensor=input_tensor, targets=targets)
+        #     # In this example grayscale_cam has only one image in the batch:
+        #     grayscale_cam = grayscale_cam[0, :]
+        #     visualization = show_cam_on_image(img_np, grayscale_cam, use_rgb=True)
+        #     # You can also get the model outputs without having to redo inference
+        #     model_outputs = cam.outputs
+
+        # plt.imshow(visualization)
+        # plt.axis("off")
+        # plt.title("Grad-CAM")
+        # plt.show()        
+
+        layers_to_compare = [
+        self.model.features.denseblock1.denselayer2.conv2,
+        self.model.features.denseblock2.denselayer4.conv2,
+        self.model.features.denseblock3.denselayer8.conv2,
+        self.model.features[-2].denselayer32.conv2,
+        ]
+
+        _ , axs = plt.subplots(1, len(layers_to_compare), figsize=(20, 5))
+        for i, layer in enumerate(layers_to_compare):
+            print(f"i : {i}, layer : {layer}")
+            with GradCAM(model=self.model, target_layers=[layer]) as cam:
+                grayscale_cam = cam(input_tensor=input_tensor, targets=targets)
+                grayscale_cam = grayscale_cam[0, :]
+                visualization = show_cam_on_image(img_np, grayscale_cam, use_rgb=True)
+                axs[i].imshow(visualization)
+                axs[i].set_title(f'Grad-CAM layer {i+1}')
+                axs[i].axis('off')
+
+        plt.tight_layout()
+        plt.show()
     
     def auc_roc(self, dataloader):
         self.model.eval()
@@ -210,6 +227,8 @@ class Model_extented(nn.Module):
         # Concatenate all batchs
         all_labels = torch.cat(all_labels).numpy()
         all_probs = torch.cat(all_probs).numpy()
+        print(f"labels : {all_labels}, probs : {all_probs}")
+        results.append(all_labels, all_probs)
 
         predicted_labels = (all_probs > 0.5).astype(int)
         print("Classification report at threshold 0.5:")
