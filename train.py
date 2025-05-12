@@ -1,6 +1,7 @@
 import time
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 import torch
 from torch import optim
@@ -8,16 +9,16 @@ from torch import nn
 from sklearn.metrics import roc_auc_score, roc_curve, auc, classification_report
 from torchmetrics.classification import BinaryRecall
 from torch.optim.lr_scheduler import StepLR
-from pytorch_grad_cam import GradCAM
+from pytorch_grad_cam import GradCAM, GradCAMPlusPlus, AblationCAM
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from pytorch_grad_cam.utils.image import show_cam_on_image
 
 from dataloader import create_dataloader
 import configs
 import utils
+from reliability_diagrams import *
 
-trainloader, validloader, testloader = create_dataloader()
-results = []
+# trainloader, validloader, testloader = create_dataloader()
 
 class Model_extented(nn.Module):
     def __init__(self,model, epochs,lr):
@@ -78,8 +79,8 @@ class Model_extented(nn.Module):
                        %(self.loss_during_training[-1],self.valid_loss_during_training[-1],
                        (time.time() - start_time)))
         
-
-    def eval_performance(self,dataloader):
+    # eval performance on trainloader and validloader
+    def eval_training_performance(self,dataloader):
         accuracy = 0
         recall_metric = BinaryRecall(threshold=0.5).to(self.device)
         self.model.eval()
@@ -102,6 +103,26 @@ class Model_extented(nn.Module):
 
         self.model.train()
         return accuracy/len(dataloader), recall
+    
+    # to eval performance on testloader and only run the dataloader loop once
+    def return_outputs(self, dataloader):
+        self.model.eval()
+        all_labels = []
+        all_probs = []
+        with torch.no_grad():
+            for inputs, labels in dataloader:
+                inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
+                outputs = self.forward(inputs)
+                probs = torch.sigmoid(outputs)
+
+                all_labels.append(labels.cpu())
+                all_probs.append(probs.cpu())
+
+        # Concatenate all batchs
+        all_labels = torch.cat(all_labels).flatten().numpy()
+        all_probs = torch.cat(all_probs).flatten().numpy()
+        self.model.train()
+        return all_labels, all_probs        
 
     def visualize_predictions(self, df, num_images_to_show):
         self.model.eval()
@@ -163,7 +184,7 @@ class Model_extented(nn.Module):
     
     def gradcam(self, dataloader, index):
         self.model.eval()
-        print("debut gradcam")
+        print("debut gradcam ")
         for inputs, _ in dataloader:
             input_img = inputs[index].unsqueeze(0).float().to(self.device)
             input_img.requires_grad = True
@@ -172,23 +193,6 @@ class Model_extented(nn.Module):
         img_np = input_img.detach().cpu().squeeze().permute(1, 2, 0).numpy() # to visualize initial image
         # We have to specify the target we want to generate the CAM for.
         targets = [ClassifierOutputTarget(0)]  # Visualise la "classe positive"
-
-        # target_layers = [model.features[-2].denselayer8.conv2] #(denselayer32) : ... (conv2): Conv2d(128, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-        # print("Target layer:", target_layers)
-
-        # with GradCAM(model=model, target_layers=target_layers) as cam:
-        #     # You can also pass aug_smooth=True and eigen_smooth=True, to apply smoothing.
-        #     grayscale_cam = cam(input_tensor=input_tensor, targets=targets)
-        #     # In this example grayscale_cam has only one image in the batch:
-        #     grayscale_cam = grayscale_cam[0, :]
-        #     visualization = show_cam_on_image(img_np, grayscale_cam, use_rgb=True)
-        #     # You can also get the model outputs without having to redo inference
-        #     model_outputs = cam.outputs
-
-        # plt.imshow(visualization)
-        # plt.axis("off")
-        # plt.title("Grad-CAM")
-        # plt.show()        
 
         layers_to_compare = [
         self.model.features.denseblock1.denselayer2.conv2,
@@ -210,26 +214,8 @@ class Model_extented(nn.Module):
 
         plt.tight_layout()
         plt.show()
-    
-    def auc_roc(self, dataloader):
-        self.model.eval()
-        all_labels = []
-        all_probs = []
-        with torch.no_grad():
-            for inputs, labels in dataloader:
-                inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
-                outputs = self.forward(inputs)
-                probs = torch.sigmoid(outputs)
 
-                all_labels.append(labels.cpu())
-                all_probs.append(probs.cpu())
-
-        # Concatenate all batchs
-        all_labels = torch.cat(all_labels).numpy()
-        all_probs = torch.cat(all_probs).numpy()
-        print(f"labels : {all_labels}, probs : {all_probs}")
-        results.append(all_labels, all_probs)
-
+    def eval_performance(self, all_labels, all_probs):
         predicted_labels = (all_probs > 0.5).astype(int)
         print("Classification report at threshold 0.5:")
         print(classification_report(all_labels, predicted_labels))
@@ -256,8 +242,73 @@ class Model_extented(nn.Module):
         plt.show()
 
         self.model.train()
-
         return roc_auc_score_
+    
+    def calibration_plot(self, all_labels, all_probs):
+        all_preds = (all_probs >= 0.5).astype(int)
+
+        df = pd.DataFrame({
+            "true_label": all_labels,
+            "pred_label": all_preds,
+            "confidence": all_probs
+        })
+        
+        y_true = df.true_label.values
+        y_pred = df.pred_label.values
+        y_conf = df.confidence.values   
+
+        fig = reliability_diagram(y_true, y_pred, y_conf, num_bins=10, draw_ece=True,
+                          draw_bin_importance="alpha", draw_averages=True,
+                          title="Reliability diagram (top) and confidence histogram (bottom)", figsize=(6, 6), dpi=100, 
+                          return_fig=True)
+
+    
+    # def auc_roc(self, dataloader):
+    #     self.model.eval()
+    #     all_labels = []
+    #     all_probs = []
+    #     with torch.no_grad():
+    #         for inputs, labels in dataloader:
+    #             inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
+    #             outputs = self.forward(inputs)
+    #             probs = torch.sigmoid(outputs)
+
+    #             all_labels.append(labels.cpu())
+    #             all_probs.append(probs.cpu())
+
+    #     # Concatenate all batchs
+    #     all_labels = torch.cat(all_labels).numpy()
+    #     all_probs = torch.cat(all_probs).numpy()
+    #     # results.extend(zip(all_labels, all_probs))
+
+    #     predicted_labels = (all_probs > 0.5).astype(int)
+    #     print("Classification report at threshold 0.5:")
+    #     print(classification_report(all_labels, predicted_labels))
+
+    #     roc_auc_score_ = roc_auc_score(all_labels, all_probs)
+
+    #     fpr, tpr, thresholds = roc_curve(all_labels, all_probs) #false positiv rate and true positiv rate
+    #     roc_auc = auc(fpr, tpr) # same as roc_auc_score but different method
+
+    #     plt.figure(figsize=(12, 6))
+
+    #     # Plot the curve
+    #     plt.subplot(1, 2, 1)
+    #     lw = 2
+    #     plt.plot(fpr, tpr, color='magenta',
+    #             lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+    #     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    #     plt.xlim([0.0, 1.0])
+    #     plt.ylim([0.0, 1.05])
+    #     plt.xlabel('False Positive Rate')
+    #     plt.ylabel('True Positive Rate')
+    #     plt.title(f'Receiver Operating Characteristic Curve (Seed: {configs.SEED})')
+    #     plt.legend(loc="lower right")
+    #     plt.show()
+
+    #     self.model.train()
+
+    #     return roc_auc_score_
     
     def auc_roc_iteration(self, dataloader):
         self.model.eval()

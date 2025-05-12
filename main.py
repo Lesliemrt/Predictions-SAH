@@ -37,8 +37,8 @@ plt.plot(my_model.loss_during_training,label='Training Loss')
 plt.plot(my_model.valid_loss_during_training,label='Validation Loss')
 plt.legend()
 
-eval_performance_train = my_model.eval_performance(trainloader)
-eval_performance_valid = my_model.eval_performance(validloader)
+eval_performance_train = my_model.eval_training_performance(trainloader)
+eval_performance_valid = my_model.eval_training_performance(validloader)
 print(f"accuracy/len(trainloader) : {eval_performance_train[0]}, recall : {eval_performance_train[1]}")
 print(f"accuracy/len(validloader) : {eval_performance_valid[0]}, recall : {eval_performance_valid[1]}")
 
@@ -50,35 +50,29 @@ print(my_model.gradcam(testloader, index = 0))
 
 # print(my_model.visualize_predictions(train_df, 10))
 
-print("auc_roc : ",my_model.auc_roc(testloader))
+# Results testloader
+all_labels, all_probs = my_model.return_outputs(testloader)       
 
-# See the results
-df = pd.DataFrame(train.results, columns=['True', "Predict"])
+# Save the results
+all_preds = (all_probs >= 0.5).astype(int)
+df = pd.DataFrame({
+    "True label": all_labels,
+    "Predicted label": all_preds,
+    "Confidence": all_probs
+})
 df.to_excel('results.xlsx', index=False)
+
+# Auc roc curve
+print("Auc-roc score : ",my_model.eval_performance(all_labels, all_probs))
+
+# Calibration eval
+print(my_model.calibration_plot(all_labels, all_probs))
+
+
+
 
 # Save the missing data in a file for later
 # df = pd.DataFrame(utils.non_existant_file, columns=['Missing patient', "-", "ST", "SE", "IM"])
 # df.to_excel('non_existant_file.xlsx', index=False)
 
 
-
-
-
-
-# test_df_f = test_df.copy()
-
-# # reshaped_predictions = np.vstack(my_model.submission_predictions)
-# # averaged_preds = np.average(reshaped_predictions, axis=0, weights=[2**i for i in range(len(submission_predictions))])
-# # averaged_preds = np.average(reshaped_predictions, axis=0)
-# # averaged_preds = averaged_preds.reshape(test_df.shape[0], test_df.shape[1])
-# preds = my_model.submission_predictions
-# print("submission_predictions : ",preds)
-# test_df_f.iloc[:, :] = preds
-
-# test_df_f = test_df_f.stack().reset_index()
-# test_df_f.insert(loc = 0, column = 'ID', value = test_df_f['Image'].astype(str) + "_" + test_df_f['Diagnosis'])
-# test_df_f = test_df_f.drop(["Image", "Diagnosis"], axis=1)
-# # test_df_f.to_csv('densenet169_submission_new.csv', index = False)
-# print(test_df_f)
-# print("Label Min : ", test_df_f["Label"].min())
-# print("Label Max : ",test_df_f["Label"].max())
