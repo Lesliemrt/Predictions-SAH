@@ -25,8 +25,14 @@ def get_model(prob=0.5):
     # Freeze parameters so we don't backprop through them
     for param in model.parameters():
         param.requires_grad = False
+    
+    # # Unfreezing the last parts of the model
+    # for name, param in model.features.denseblock4.named_parameters():
+    #     if "denselayer30" in name or "denselayer31" in name or "denselayer32" in name:
+    #         param.requires_grad = True
 
     in_features = model.classifier.in_features
     model.classifier = Model(in_features, prob)
 
     return model
+

@@ -22,7 +22,7 @@ trainloader, validloader, testloader = dataloader.create_dataloader()
 # Load model
 from model import get_model
 model = get_model(prob=0.5)  #prob = prob for dropout
-my_model=Model_extented(model, epochs=4, lr=1e-3)
+my_model=Model_extented(model, epochs=5, lr=1e-3)
 
 # Training
 my_model.trainloop(trainloader, validloader, testloader)
@@ -36,11 +36,19 @@ my_model.trainloop(trainloader, validloader, testloader)
 plt.plot(my_model.loss_during_training,label='Training Loss')
 plt.plot(my_model.valid_loss_during_training,label='Validation Loss')
 plt.legend()
+plt.show()
 
-eval_performance_train = my_model.eval_training_performance(trainloader)
-eval_performance_valid = my_model.eval_training_performance(validloader)
-print(f"accuracy/len(trainloader) : {eval_performance_train[0]}, recall : {eval_performance_train[1]}")
-print(f"accuracy/len(validloader) : {eval_performance_valid[0]}, recall : {eval_performance_valid[1]}")
+# Training and validation accuracy
+plt.plot(my_model.accuracy_during_training,label='Training Accuracy')
+plt.plot(my_model.valid_accuracy_during_training,label='Validation Accuracy')
+plt.legend()
+plt.show()
+
+
+# eval_performance_train = my_model.eval_training_performance(trainloader)
+# eval_performance_valid = my_model.eval_training_performance(validloader)
+# print(f"accuracy/len(trainloader) : {eval_performance_train[0]}, recall : {eval_performance_train[1]}")
+# print(f"accuracy/len(validloader) : {eval_performance_valid[0]}, recall : {eval_performance_valid[1]}")
 
 # Saliency maps
 print(my_model.saliency(testloader, index=0))
@@ -50,7 +58,7 @@ print(my_model.gradcam(testloader, index = 0))
 
 # print(my_model.visualize_predictions(train_df, 10))
 
-# Results testloader
+# Results testloader (to save time)
 all_labels, all_probs = my_model.return_outputs(testloader)       
 
 # Save the results

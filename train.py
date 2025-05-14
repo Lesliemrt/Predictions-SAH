@@ -30,6 +30,8 @@ class Model_extented(nn.Module):
         self.loss_function = nn.BCEWithLogitsLoss()
         self.loss_during_training = []
         self.valid_loss_during_training = []
+        self.accuracy_during_training = []
+        self.valid_accuracy_during_training = []
         self.submission_predictions=[]
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #to run on gpu if available
         self.model.to(self.device)
@@ -44,6 +46,7 @@ class Model_extented(nn.Module):
             print(f'=========== EPOCH {epoch}/{self.epochs-1}')
             start_time = time.time()
             running_loss = 0.0
+            train_accuracy = 0.0
             for inputs, labels in trainloader:
                 inputs, labels = inputs.float().to(self.device), labels.float().to(self.device) #model expect float32
                 self.optim.zero_grad()
@@ -55,12 +58,21 @@ class Model_extented(nn.Module):
                 running_loss += loss.item()
                 self.optim.step()
 
+                # Accuracy
+                probs = torch.sigmoid(outputs)
+                predicted_labels = (probs > 0.3).float() # Get predicted labels based on threshold
+                labels = labels.unsqueeze(1)
+                equals = (predicted_labels == labels) # Compare predicted and actual labels
+                train_accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
+
             self.loss_during_training.append(running_loss/len(trainloader))
+            self.accuracy_during_training.append(train_accuracy/len(trainloader))
 
             # Validation mode
             self.model.eval()
             with torch.no_grad():
                 val_loss = 0.0
+                val_accuracy = 0.0
                 for inputs, labels in validloader:
                     inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
                     outputs = self.forward(inputs)
@@ -68,9 +80,17 @@ class Model_extented(nn.Module):
                     loss = self.loss_function(outputs, labels)
                     val_loss += loss.item()
 
-                self.valid_loss_during_training.append(val_loss/len(validloader))
+                    # Accuracy
+                    probs = torch.sigmoid(outputs)
+                    predicted_labels = (probs > 0.3).float() # Get predicted labels based on threshold
+                    labels = labels.unsqueeze(1)
+                    equals = (predicted_labels == labels) # Compare predicted and actual labels
+                    val_accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
 
-            scheduler.step()  # decrease lr
+                self.valid_loss_during_training.append(val_loss/len(validloader))
+                self.valid_accuracy_during_training.append(val_accuracy/len(validloader))
+
+            # scheduler.step()  # decrease lr
             current_lr = self.optim.param_groups[0]['lr']
             print(f"Current learning rate: {current_lr}")
 
