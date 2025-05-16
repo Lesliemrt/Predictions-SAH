@@ -64,7 +64,7 @@ def sometimes(prob, transform):
 # Ajust the image paths
 def ajust_path(identifier):
     paciente, serie, imagen = identifier.split('-')
-    path = f"{configs.DATA_DIR}hospital_data_1\\raw data\\{paciente}\\DICOM\\ST00001\\{serie}\\{imagen}"
+    path = f"{configs.DATA_DIR}hospital_data_1/raw data/{paciente}/DICOM/ST00001/{serie}/{imagen}"
     return path
 
 # Visualize random images from a dataset before training

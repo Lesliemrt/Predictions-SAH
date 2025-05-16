@@ -106,9 +106,7 @@ new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
 data_df = new_label_df[['ANY Vasoespasm ','Path']]
 data_df = data_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
 
-patiente = 11 #index of {patiente} in the path
-
-# unique_patients = data_df['Path'].apply(lambda x: x.split('\\')[patiente]).unique()
+# unique_patients = data_df['Path'].apply(lambda x: x.split('/')[patiente]).unique()
 # print('unique_patients : ', unique_patients)
 
 # Remove unexistant file/ path from data_df : 
@@ -132,19 +130,23 @@ print("data_df after : ","count 1 : ", count_1, "count 0 : ", count_0)
 # test_patients = unique_patients[split_idx_valid:]
 
 # Stratified split in patients 
+patiente = 8 #index of {patiente} in the path
 patient_df = data_df.copy()
-patient_df["ID"] = patient_df["Path"].apply(lambda x: x.split('\\')[patiente])
+patient_df["ID"] = patient_df["Path"].apply(lambda x: x.split('/')[patiente])
+print("1 ",patient_df.head(5))
 patient_df = patient_df.groupby("ID")["ANY_Vasospasm"].max().reset_index()  # label = 1 if at least one image is positive
+print("2 ",patient_df.head(5))
 
 # Everything inside create_dataloader to be able to change the seed with main_40_iterations
 def create_dataloader():
+    print(patient_df["ANY_Vasospasm"].value_counts())
     train_patients, val_test_patients = train_test_split(
         patient_df,
         train_size=configs.split_train,
         stratify=patient_df["ANY_Vasospasm"],
         random_state=configs.SEED
     )
-
+    print(val_test_patients["ANY_Vasospasm"].value_counts())
     test_size = configs.split_test/(configs.split_valid + configs.split_test)
 
     valid_patients, test_patients = train_test_split(
@@ -155,9 +157,9 @@ def create_dataloader():
     )
 
     # Create DataFrames
-    train_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in train_patients["ID"].values)]
-    valid_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in valid_patients["ID"].values)]
-    test_df = data_df[data_df['Path'].apply(lambda x: x.split('\\')[patiente] in test_patients["ID"].values)]
+    train_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in train_patients["ID"].values)]
+    valid_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in valid_patients["ID"].values)]
+    test_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in test_patients["ID"].values)]
 
     # Oversampling for class 1 (~ 28% of 1) only for training !!
 
