@@ -208,7 +208,7 @@ def create_dataloader():
     )
 
     # Visualize random images from training set before training
-    # utils.visualize(3, train_df)
+    utils.visualize(3, train_df)
 
     # Create DataLoaders
     trainloader = DataLoader(train_dataset, batch_size=configs.TRAIN_BATCH_SIZE, shuffle=True)
