@@ -72,6 +72,8 @@ plt.ylabel('True Positive Rate')
 plt.title(f'Receiver Operating Characteristic Curve')
 plt.legend(loc="lower right")
 plt.tight_layout()
-plt.show()
+# plt.show()
+plt.savefig(f"{configs.DATA_DIR}/results/auc roc iterations.png") 
+plt.close()
 
 

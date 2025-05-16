@@ -8,6 +8,7 @@ from train import Model_extented
 import dataloader
 import utils
 import train
+import configs
 
 # For reproductibility
 np.random.seed(SEED)
@@ -36,13 +37,18 @@ my_model.trainloop(trainloader, validloader, testloader)
 plt.plot(my_model.loss_during_training,label='Training Loss')
 plt.plot(my_model.valid_loss_during_training,label='Validation Loss')
 plt.legend()
-plt.show()
+# plt.show()
+plt.savefig(f"{configs.DATA_DIR}/results/loss.png") 
+plt.close()
 
 # Training and validation accuracy
 plt.plot(my_model.accuracy_during_training,label='Training Accuracy')
 plt.plot(my_model.valid_accuracy_during_training,label='Validation Accuracy')
 plt.legend()
-plt.show()
+# plt.show()
+plt.savefig(f"{configs.DATA_DIR}/results/accuracy.png") 
+plt.close()
+
 
 
 # eval_performance_train = my_model.eval_training_performance(trainloader)

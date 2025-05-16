@@ -69,6 +69,7 @@ def ajust_path(identifier):
 
 # Visualize random images from a dataset before training
 def visualize(num_images_to_show, train_df):
+    _ , axs = plt.subplots(1, num_images_to_show, figsize=(20, 5))
     for i in range(num_images_to_show):
         random_index = np.random.randint(0, len(train_df))
         
@@ -82,4 +83,7 @@ def visualize(num_images_to_show, train_df):
         plt.imshow(img, cmap='gray')
         plt.title(f"Index: {random_index}, Etiqueta: {label}")
         plt.axis('off')
-        plt.show()
+        # plt.show()
+    plt.tight_layout()
+    plt.savefig(f"{configs.DATA_DIR}/results/visualize before training.png") 
+    plt.close()

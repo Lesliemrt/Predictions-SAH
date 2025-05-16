@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import configs
 
 
 def compute_calibration(true_labels, pred_labels, confidences, num_bins=10):
@@ -176,7 +177,10 @@ def _reliability_diagram_combined(bin_data,
     new_ticks = np.abs(ax[1].get_yticks()).astype(int)
     ax[1].set_yticklabels(new_ticks)    
 
-    plt.show()
+    # plt.show()
+    plt.savefig(f"{configs.DATA_DIR}/results/calibration.png") 
+    plt.close()
+
 
     if return_fig: return fig
 
@@ -275,6 +279,9 @@ def reliability_diagrams(results, num_bins=10,
         col = i % ncols        
         ax[row, col].axis("off")
         
-    plt.show()
+    # plt.show()
+    plt.savefig(f"{configs.DATA_DIR}/results/calibration for more than one model.png") 
+    plt.close()
+
 
     if return_fig: return fig
