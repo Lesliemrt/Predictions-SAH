@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torchvision import models
+from configs import DATA_DIR
 
 class Model(nn.Module):
     def __init__(self, in_features, prob):
@@ -21,6 +22,25 @@ class Model(nn.Module):
 
 def get_model(prob=0.5):    
     model = models.densenet169(pretrained=True) # pretrained on ImageNet
+
+    # Freeze parameters so we don't backprop through them
+    for param in model.parameters():
+        param.requires_grad = False
+    
+    # # Unfreezing the last parts of the model
+    # for name, param in model.features.denseblock4.named_parameters():
+    #     if "denselayer30" in name or "denselayer31" in name or "denselayer32" in name:
+    #         param.requires_grad = True
+
+    in_features = model.classifier.in_features
+    model.classifier = Model(in_features, prob)
+
+    return model
+
+def get_model_densenet_121(prob=0.5):    
+    model = models.densenet121(pretrained=False)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #to run on gpu if available
+    model.load_state_dict(torch.load(f"{DATA_DIR}RadImageNet_pytorch/DenseNet121.pt", map_location=device))
 
     # Freeze parameters so we don't backprop through them
     for param in model.parameters():

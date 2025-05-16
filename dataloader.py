@@ -133,9 +133,7 @@ print("data_df after : ","count 1 : ", count_1, "count 0 : ", count_0)
 patiente = 8 #index of {patiente} in the path
 patient_df = data_df.copy()
 patient_df["ID"] = patient_df["Path"].apply(lambda x: x.split('/')[patiente])
-print("1 ",patient_df.head(5))
 patient_df = patient_df.groupby("ID")["ANY_Vasospasm"].max().reset_index()  # label = 1 if at least one image is positive
-print("2 ",patient_df.head(5))
 
 # Everything inside create_dataloader to be able to change the seed with main_40_iterations
 def create_dataloader():
@@ -146,7 +144,6 @@ def create_dataloader():
         stratify=patient_df["ANY_Vasospasm"],
         random_state=configs.SEED
     )
-    print(val_test_patients["ANY_Vasospasm"].value_counts())
     test_size = configs.split_test/(configs.split_valid + configs.split_test)
 
     valid_patients, test_patients = train_test_split(
@@ -206,9 +203,6 @@ def create_dataloader():
         batch_size=configs.TEST_BATCH_SIZE,
         augment=False
     )
-
-    # Visualize random images from training set before training
-    utils.visualize(3, train_df)
 
     # Create DataLoaders
     trainloader = DataLoader(train_dataset, batch_size=configs.TRAIN_BATCH_SIZE, shuffle=True)
