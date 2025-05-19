@@ -21,8 +21,9 @@ torch.backends.cudnn.benchmark = False
 trainloader, validloader, testloader = dataloader.create_dataloader()
 
 # Load model
-from model import get_model_densenet_121
-model = get_model_densenet_121(prob=0.5)  #prob = prob for dropout
+from model import get_model_densenet121
+model = get_model_densenet121(prob=0.5)  #prob = prob for dropout
+print(model)
 my_model=Model_extented(model, epochs=5, lr=1e-3)
 
 # Training

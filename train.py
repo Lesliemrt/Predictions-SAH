@@ -33,7 +33,7 @@ class Model_extented(nn.Module):
         self.accuracy_during_training = []
         self.valid_accuracy_during_training = []
         self.submission_predictions=[]
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #to run on gpu if available
+        self.device = configs.device
         self.model.to(self.device)
 
     def forward(self, x):
@@ -224,7 +224,7 @@ class Model_extented(nn.Module):
         self.model.features.denseblock1.denselayer2.conv2,
         self.model.features.denseblock2.denselayer4.conv2,
         self.model.features.denseblock3.denselayer8.conv2,
-        self.model.features[-2].denselayer32.conv2,
+        self.model.features[-2].denselayer16.conv2,
         ]
 
         _ , axs = plt.subplots(1, len(layers_to_compare), figsize=(20, 5))
