@@ -90,7 +90,7 @@ class Model_extented(nn.Module):
                 self.valid_loss_during_training.append(val_loss/len(validloader))
                 self.valid_accuracy_during_training.append(val_accuracy/len(validloader))
 
-            # scheduler.step()  # decrease lr
+            scheduler.step()  # decrease lr
             current_lr = self.optim.param_groups[0]['lr']
             print(f"Current learning rate: {current_lr}")
 

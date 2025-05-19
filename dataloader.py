@@ -106,9 +106,6 @@ new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
 data_df = new_label_df[['ANY Vasoespasm ','Path']]
 data_df = data_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
 
-# unique_patients = data_df['Path'].apply(lambda x: x.split('/')[patiente]).unique()
-# print('unique_patients : ', unique_patients)
-
 # Remove unexistant file/ path from data_df : 
 count_0 = len(data_df[data_df["ANY_Vasospasm"] == 0])
 count_1 = len(data_df[data_df["ANY_Vasospasm"] == 1])
@@ -120,6 +117,10 @@ count_0 = len(data_df[data_df["ANY_Vasospasm"] == 0])
 count_1 = len(data_df[data_df["ANY_Vasospasm"] == 1])
 print("data_df after : ","count 1 : ", count_1, "count 0 : ", count_0)
 
+# No stratified split in patient
+# patiente = 8 #index of {patiente} in the path
+# unique_patients = data_df['Path'].apply(lambda x: x.split('/')[patiente]).unique()
+# print('unique_patients : ', unique_patients)
 # np.random.shuffle(unique_patients)
 
 # split_idx_train = int(len(unique_patients) * configs.split_train)
