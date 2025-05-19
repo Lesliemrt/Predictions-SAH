@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import pandas as pd
+from torchvision.models import resnet50, densenet121, densenet169
 
 from configs import SEED
 from train import Model_extented
@@ -9,6 +10,7 @@ import dataloader
 import utils
 import train
 import configs
+import model
 
 # For reproductibility
 np.random.seed(SEED)
@@ -21,10 +23,9 @@ torch.backends.cudnn.benchmark = False
 trainloader, validloader, testloader = dataloader.create_dataloader()
 
 # Load model
-from model import get_model_densenet121
-model = get_model_densenet121(prob=0.5)  #prob = prob for dropout
-print(model)
-my_model=Model_extented(model, epochs=5, lr=1e-3)
+#prob = prob for dropout, classifier = model.Classifier or model.Classifier_Many_Layers
+model = model.get_model(prob=0.5, base_model=densenet169, pretrained = True, classifier=model.Classifier)
+my_model=Model_extented(model, epochs=15, lr=1e-3)
 
 # Training
 my_model.trainloop(trainloader, validloader, testloader)

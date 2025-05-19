@@ -224,7 +224,7 @@ class Model_extented(nn.Module):
         self.model.features.denseblock1.denselayer2.conv2,
         self.model.features.denseblock2.denselayer4.conv2,
         self.model.features.denseblock3.denselayer8.conv2,
-        self.model.features[-2].denselayer16.conv2,
+        self.model.features[-2].denselayer32.conv2,
         ]
 
         _ , axs = plt.subplots(1, len(layers_to_compare), figsize=(20, 5))
