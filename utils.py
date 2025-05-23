@@ -5,6 +5,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import pydicom
+from collections import OrderedDict
 
 import configs
 
@@ -92,3 +93,12 @@ def visualize(num_images_to_show, train_df):
     plt.tight_layout()
     plt.savefig(f"{configs.DATA_DIR}/results/visualize before training.png") 
     plt.close()
+
+# Remove .module dans state_dict and change features to densenet169 so the weights match
+def adapt_name(state_dict):
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = k.replace('module.', '').replace('densenet169.', 'features.')
+        # name = k.replace('module.', '')
+        new_state_dict[name] = v
+    return new_state_dict

@@ -15,7 +15,7 @@ auc_values = []
 training_accuracy_values = []
 validation_accuracy_values = []
 lw = 2 #line width
-nb_iterations = 4
+nb_iterations = 30
 
 plt.figure()
 for k in range(nb_iterations):
@@ -36,7 +36,7 @@ for k in range(nb_iterations):
     # Load model
     from model import get_model
     model = get_model(prob=0.5)  #prob = prob for dropout
-    my_model=Model_extented(model, epochs=4, lr=1e-3)
+    my_model=Model_extented(model, epochs=7, lr=1e-3)
 
     # Training
     my_model.trainloop(trainloader, validloader, testloader)

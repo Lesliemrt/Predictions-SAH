@@ -23,9 +23,12 @@ torch.backends.cudnn.benchmark = False
 trainloader, validloader, testloader = dataloader.create_dataloader()
 
 # Load model
-#prob = prob for dropout, classifier = model.Classifier or model.Classifier_Many_Layers
-model = model.get_model(prob=0.5, base_model=densenet169, pretrained = True, classifier=model.Classifier)
-my_model=Model_extented(model, epochs=12, lr=1e-3)
+# prob = prob for dropout
+# model = densenet169 or densenet121
+# pretrained = True for pretraining on ImageNet or False for pretraining on Medical Images
+# classifier = model.Classifier or model.Classifier_Many_Layers
+model = model.get_model(prob=0.5, model=densenet169, pretrained = False, classifier=model.Classifier_Many_Layers)
+my_model=Model_extented(model, epochs=8, lr=1e-3)
 
 # Training
 my_model.trainloop(trainloader, validloader, testloader)

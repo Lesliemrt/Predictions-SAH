@@ -28,17 +28,17 @@ class TrainDataset(Dataset):
         base_transforms = []
         if self.augment:
             base_transforms += [
-                utils.sometimes(0.50, transforms.RandomResizedCrop(size=(self.img_size[1], self.img_size[2]), scale=(0.8, 1.0))),
+                # utils.sometimes(0.50, transforms.RandomResizedCrop(size=(self.img_size[1], self.img_size[2]), scale=(0.8, 1.0))),
                 utils.sometimes(0.3, transforms.RandomAffine(degrees=0, scale=(0.8, 1.2))),  # Zoom
                 utils.sometimes(0.3, transforms.RandomRotation(degrees=30)),   # Rotation
                 utils.sometimes(0.3, transforms.ColorJitter(brightness=0.2)),  # Brightness variation (≈ Multiply)
-                utils.sometimes(0.3, transforms.RandomErasing(scale=(0.02, 0.1))),
-                utils.sometimes(0.3, transforms.RandomAffine(degrees=0, translate=(0.2, 0.2)))
+                # utils.sometimes(0.3, transforms.RandomErasing(scale=(0.02, 0.1))),
+                # utils.sometimes(0.3, transforms.RandomAffine(degrees=0, translate=(0.2, 0.2))) # Translation
 
                 # Other augmentations :
                 # transforms.RandomHorizontalFlip(p=0.25),
                 # transforms.RandomVerticalFlip(p=0.10),
-                # transforms.RandomAffine(degrees=0, translate=(0.2, 0.2)),  # Translation
+                # transforms.RandomAffine(degrees=0, translate=(0.2, 0.2)),  
                 # utils.sometimes(0.25, transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))),
                 # transforms.RandomCrop(size=(self.img_size[1], self.img_size[2]),  # Crop
                 #                     padding=(int(0.1 * self.img_size[1]), int(0.1 * self.img_size[2])),
