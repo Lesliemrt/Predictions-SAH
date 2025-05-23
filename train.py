@@ -61,7 +61,6 @@ class Model_extented(nn.Module):
                 # Accuracy
                 probs = torch.sigmoid(outputs)
                 predicted_labels = (probs > 0.3).float() # Get predicted labels based on threshold
-                labels = labels.unsqueeze(1)
                 equals = (predicted_labels == labels) # Compare predicted and actual labels
                 train_accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
 
@@ -83,14 +82,13 @@ class Model_extented(nn.Module):
                     # Accuracy
                     probs = torch.sigmoid(outputs)
                     predicted_labels = (probs > 0.3).float() # Get predicted labels based on threshold
-                    labels = labels.unsqueeze(1)
                     equals = (predicted_labels == labels) # Compare predicted and actual labels
                     val_accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
 
                 self.valid_loss_during_training.append(val_loss/len(validloader))
                 self.valid_accuracy_during_training.append(val_accuracy/len(validloader))
 
-            scheduler.step()  # decrease lr
+            # scheduler.step()  # decrease lr
             current_lr = self.optim.param_groups[0]['lr']
             print(f"Current learning rate: {current_lr}")
 
@@ -115,7 +113,9 @@ class Model_extented(nn.Module):
                 predicted_labels = (probs > 0.3).float() # Get predicted labels based on threshold
                 labels = labels.unsqueeze(1)
                 equals = (predicted_labels == labels) # Compare predicted and actual labels
-                accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
+                # accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
+                accuracy += torch.mean(equals.float()).item()
+
 
                 recall_metric.update(probs.view(-1), labels.view(-1))
             
