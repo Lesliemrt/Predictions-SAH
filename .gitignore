@@ -9,6 +9,7 @@ results/
 #others
 *.h5
 **/__pycache__/
+*.onnx
 
 #results (not useful)
 non_existant_file.xlsx

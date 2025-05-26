@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import torch
 import pandas as pd
 
+
 from train import Model_extented
 import dataloader
 import utils
@@ -15,7 +16,7 @@ auc_values = []
 training_accuracy_values = []
 validation_accuracy_values = []
 lw = 2 #line width
-nb_iterations = 30
+nb_iterations = 8
 
 plt.figure()
 for k in range(nb_iterations):
@@ -34,8 +35,8 @@ for k in range(nb_iterations):
     trainloader, validloader, testloader = dataloader.create_dataloader()
 
     # Load model
-    from model import get_model
-    model = get_model(prob=0.5)  #prob = prob for dropout
+    from model import get_model, Classifier, Classifier_Many_Layers
+    model = get_model(prob=0.5, model="densenet169", pretrained = False, classifier=Classifier_Many_Layers) #prob = prob for dropout
     my_model=Model_extented(model, epochs=7, lr=1e-3)
 
     # Training

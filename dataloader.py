@@ -8,6 +8,7 @@ import cv2
 # from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, WeightedRandomSampler
+import torch.nn.functional as F
 
 import configs
 import utils
@@ -51,6 +52,7 @@ class TrainDataset(Dataset):
         return len(self.ids)
 
     def __getitem__(self, index):
+        # image
         image_path = self.dataset['Path'].iloc[index]
 
         image = utils._read(image_path)
@@ -58,15 +60,26 @@ class TrainDataset(Dataset):
         if image is None:
             raise FileNotFoundError(f"Image not found : {image_path}")
 
-        # resize_transform = transforms.Resize((self.img_size[1], self.img_size[2]))
-        # image = resize_transform(image)
-
         # Augmentations for trainloader (if self.augment)
         image = self.transform(image)
 
+        # metadata
+        age = torch.tensor(self.dataset['Age'].iloc[index], dtype=torch.float32)
+        saps2 = torch.tensor(self.dataset['SAPSII'].iloc[index], dtype=torch.float32)
+        gcs = torch.tensor(self.dataset['GCS'].iloc[index], dtype=torch.float32)
+        sex = self.dataset['Sex'].iloc[index]
+        sex = F.one_hot(torch.tensor(sex), num_classes=2).float()
+        fisher = self.dataset['Fisher'].iloc[index]
+        fisher = F.one_hot(torch.tensor(fisher), num_classes=4).float()
+        aneurysm = self.dataset['Aneurysm'].iloc[index]
+        aneurysm = F.one_hot(torch.tensor(aneurysm), num_classes=7).float()
+
+        meta = torch.cat([age, sex, saps2, gcs, fisher, aneurysm], dim=0)
+        
+        # label
         label = torch.tensor(self.labels.iloc[index], dtype=torch.float32)
 
-        return image, label
+        return {'image':image, 'meta':meta, 'label':label}
 
 # To predict probabilities on new data without labels (not used for now)
 class TestDataset(Dataset):
@@ -133,8 +146,20 @@ print("data_df after : ","count 1 : ", count_1, "count 0 : ", count_0)
 # Stratified split in patients 
 patiente = 8 #index of {patiente} in the path
 patient_df = data_df.copy()
-patient_df["ID"] = patient_df["Path"].apply(lambda x: x.split('/')[patiente])
-patient_df = patient_df.groupby("ID")["ANY_Vasospasm"].max().reset_index()  # label = 1 if at least one image is positive
+patient_df["HSA"] = patient_df["Path"].apply(lambda x: x.split('/')[patiente])
+patient_df = patient_df.groupby("HSA")["ANY_Vasospasm"].max().reset_index()  # patient's label = 1 if at least one image is positive
+
+
+"""DATA FRAME META DATA"""
+metadata_df = pd.read_excel('excel_predicciones.xlsx', sheet_name='datos hospital')
+metadata_df = metadata_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'Aneurisma']]
+metadata_df = metadata_df.rename(columns={'Edad':'Age','Sexo':'Sex', 'Aneurisma':'Aneurysm'})
+
+# Add metadata to data_df
+data_df['HSA'] = data_df['Path'].apply(lambda x: x.split('/')[patiente])
+data_df = pd.merge(data_df, metadata_df, on='HSA', how='left')
+
+print(data_df.tail(2))
 
 # Everything inside create_dataloader to be able to change the seed with main_40_iterations
 def create_dataloader():
@@ -155,9 +180,9 @@ def create_dataloader():
     )
 
     # Create DataFrames
-    train_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in train_patients["ID"].values)]
-    valid_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in valid_patients["ID"].values)]
-    test_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in test_patients["ID"].values)]
+    train_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in train_patients["HSA"].values)]
+    valid_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in valid_patients["HSA"].values)]
+    test_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in test_patients["HSA"].values)]
 
     # Oversampling for class 1 (~ 28% of 1) only for training !!
 
@@ -172,9 +197,12 @@ def create_dataloader():
     # train_oversample_df = pd.concat([train_df, vasospasm_df])
     # train_df = train_oversample_df
 
+    print("traindf", train_df.head(10))
+
     count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
     count_1 = len(train_df[train_df["ANY_Vasospasm"] == 1])
     print("count 1 train : ", count_1, "count 0 train : ", count_0)
+
 
     # Labels 'ANY_Vasospasm'
     train_labels = train_df["ANY_Vasospasm"]
@@ -209,6 +237,6 @@ def create_dataloader():
     trainloader = DataLoader(train_dataset, batch_size=configs.TRAIN_BATCH_SIZE, shuffle=True)
     validloader = DataLoader(valid_dataset, batch_size=configs.VALID_BATCH_SIZE, shuffle=False)
     testloader = DataLoader(test_dataset, batch_size=16, shuffle=False)
-
+    
     return trainloader, validloader, testloader
 

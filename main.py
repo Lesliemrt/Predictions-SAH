@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import pandas as pd
-from torchvision.models import resnet50, densenet121, densenet169
 
 from configs import SEED
 from train import Model_extented
@@ -10,7 +9,6 @@ import dataloader
 import utils
 import train
 import configs
-import model
 
 # For reproductibility
 np.random.seed(SEED)
@@ -23,11 +21,12 @@ torch.backends.cudnn.benchmark = False
 trainloader, validloader, testloader = dataloader.create_dataloader()
 
 # Load model
+from model import get_model, Classifier, Classifier_Many_Layers
 # prob = prob for dropout
 # model = densenet169 or densenet121
 # pretrained = True for pretraining on ImageNet or False for pretraining on Medical Images
 # classifier = model.Classifier or model.Classifier_Many_Layers
-model = model.get_model(prob=0.5, model=densenet169, pretrained = False, classifier=model.Classifier_Many_Layers)
+model = get_model(prob=0.5, model="densenet169", pretrained = False, classifier=Classifier_Many_Layers)
 my_model=Model_extented(model, epochs=8, lr=1e-3)
 
 # Training
@@ -62,7 +61,7 @@ plt.close()
 # print(f"accuracy/len(validloader) : {eval_performance_valid[0]}, recall : {eval_performance_valid[1]}")
 
 # Saliency maps
-print(my_model.saliency(testloader, index=0))
+print(my_model.saliency(testloader, index=1))
 
 # Grad cam
 print(my_model.gradcam(testloader, index = 0))

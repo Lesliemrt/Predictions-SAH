@@ -91,51 +91,40 @@ class CombineBackboneClassifier(nn.Module):
 # densenet169(pretrained = False) : pretrained on RSNA2019 data set
 # densenet121(pretrained = True) : pretrained on ImageNet
 # densenet121(pretrained = False) : pretrained on RadImageNet
-def get_model(prob=0.5, model=densenet169, pretrained=True, classifier=Classifier):    
+def get_model(prob=0.5, model="densenet169", pretrained=True, classifier=Classifier):    
     device = configs.device
 
     if pretrained == True:
-        if model == densenet169:
+        if model == "densenet169":
             model = densenet169(pretrained=True)
-        if model == densenet121:
+        if model == "densenet121":
             model = densenet121(pretrained = True)
-        # Freeze parameters so we don't backprop through them
-        for param in model.parameters():
-            param.requires_grad = False
-        
-        in_features = model.classifier.in_features
-        model.classifier = classifier(in_features, prob)
 
     if pretrained == False : 
-        if model == densenet121:
+        if model == "densenet121":
             model = densenet121(pretrained = False)
             state_dict=torch.load(f"{DATA_DIR}RadImageNet_pytorch/densenet121.pt", map_location = device)
             missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
                         # 4. Afficher ce qui a été ignoré
             print("⚠️ Clés manquantes dans le state_dict (non chargées) :", missing_keys[:10], len(missing_keys))
-            print("⚠️ Clés inattendues (ignorées car pas dans le modèle) :", unexpected_keys[:10], len(unexpected_keys))
-
-            # Freeze parameters so we don't backprop through them
-            for param in model.parameters():
-                param.requires_grad = False
-            
-            in_features = model.classifier.in_features
-            model.classifier = classifier(in_features, prob)       
+            print("⚠️ Clés inattendues (ignorées car pas dans le modèle) :", unexpected_keys[:10], len(unexpected_keys))     
         
-        if model == densenet169:
-            # model = CombineBackboneClassifier(backbone = Densenet169_onnx, classifier = Classifier)
-
+        if model == "densenet169":
             model = densenet169(pretrained = False)
             state_dict = torch.load(f"{DATA_DIR}model_epoch_best_4.pth", map_location=device)['state_dict']
             state_dict = utils.adapt_name(state_dict)
             model.load_state_dict(state_dict, strict=False)
 
-            # Freeze parameters so we don't backprop through them
-            for param in model.parameters():
-                param.requires_grad = False
-            
-            in_features = model.classifier.in_features
-            model.classifier = classifier(in_features, prob)     
+    # Freeze parameters so we don't backprop through them
+    for param in model.parameters():
+        param.requires_grad = False
     
+    in_features = model.classifier.in_features
+    model.classifier = classifier(in_features, prob)     
+    
+    return model
+
+def get_model_onnx(classifier = Classifier):
+    model = CombineBackboneClassifier(backbone = Densenet169_onnx, classifier = classifier)
     return model
 

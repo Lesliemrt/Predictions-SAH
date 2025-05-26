@@ -47,7 +47,9 @@ class Model_extented(nn.Module):
             start_time = time.time()
             running_loss = 0.0
             train_accuracy = 0.0
-            for inputs, labels in trainloader:
+            for batch in trainloader:
+                inputs = batch['image']
+                labels = batch['label']
                 inputs, labels = inputs.float().to(self.device), labels.float().to(self.device) #model expect float32
                 self.optim.zero_grad()
                 outputs = self.forward(inputs)
@@ -72,7 +74,9 @@ class Model_extented(nn.Module):
             with torch.no_grad():
                 val_loss = 0.0
                 val_accuracy = 0.0
-                for inputs, labels in validloader:
+                for batch in validloader:
+                    inputs = batch['image']
+                    labels = batch['label']
                     inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
                     outputs = self.forward(inputs)
                     labels = labels.unsqueeze(1)
@@ -104,7 +108,9 @@ class Model_extented(nn.Module):
         self.model.eval()
         # Turn off gradients for validation, saves memory and computations
         with torch.no_grad():
-            for inputs,labels in dataloader:
+            for batch in dataloader:
+                inputs = batch['image']
+                labels = batch['label']
                 inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
                 outputs = self.forward(inputs)
                 probs = torch.sigmoid(outputs)
@@ -130,7 +136,9 @@ class Model_extented(nn.Module):
         all_labels = []
         all_probs = []
         with torch.no_grad():
-            for inputs, labels in dataloader:
+            for batch in dataloader:
+                inputs = batch['image']
+                labels = batch['label']
                 inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
                 outputs = self.forward(inputs)
                 probs = torch.sigmoid(outputs)
@@ -174,7 +182,9 @@ class Model_extented(nn.Module):
 
     def saliency(self, dataloader, index):
         self.model.eval()
-        for inputs, _ in dataloader:
+        for batch in dataloader:
+            inputs = batch['image']
+            labels = batch['label']
             input_img = inputs[index].unsqueeze(0).float().to(self.device)
             input_img.requires_grad = True
 
@@ -193,7 +203,7 @@ class Model_extented(nn.Module):
             plt.subplot(1, 2, 1)
             img_np = input_img.detach().cpu().squeeze().permute(1, 2, 0).numpy()
             plt.imshow(img_np, cmap='gray' if img_np.shape[2] == 1 else None)
-            plt.title("Original Image")
+            plt.title(f"Original Image (label = {labels[index]})")
             plt.axis("off")
             plt.subplot(1, 2, 2)
             plt.imshow(saliency_map.cpu(), cmap='hot')
@@ -211,7 +221,8 @@ class Model_extented(nn.Module):
     def gradcam(self, dataloader, index):
         self.model.eval()
         print("debut gradcam ")
-        for inputs, _ in dataloader:
+        for batch in dataloader:
+            inputs = batch['image']
             input_img = inputs[index].unsqueeze(0).float().to(self.device)
             input_img.requires_grad = True
             break #just for one image
@@ -345,7 +356,9 @@ class Model_extented(nn.Module):
         all_labels = []
         all_probs = []
         with torch.no_grad():
-            for inputs, labels in dataloader:
+            for batch in dataloader:
+                inputs = batch['image']
+                labels = batch['label']
                 inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
                 outputs = self.forward(inputs)
                 probs = torch.sigmoid(outputs)
