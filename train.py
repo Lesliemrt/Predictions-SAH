@@ -36,8 +36,8 @@ class Model_extented(nn.Module):
         self.device = configs.device
         self.model.to(self.device)
 
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, image, meta):
+        return self.model(image, meta)
 
     def trainloop(self, trainloader, validloader, testloader):
         self.model.train()
@@ -49,10 +49,11 @@ class Model_extented(nn.Module):
             train_accuracy = 0.0
             for batch in trainloader:
                 inputs = batch['image']
+                meta = batch['meta']
                 labels = batch['label']
-                inputs, labels = inputs.float().to(self.device), labels.float().to(self.device) #model expect float32
+                inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device) #model expect float32
                 self.optim.zero_grad()
-                outputs = self.forward(inputs)
+                outputs = self.forward(image=inputs, meta=meta)
                 labels = labels.unsqueeze(1)
                 loss = self.loss_function(outputs, labels)
                 loss.backward()
@@ -76,9 +77,10 @@ class Model_extented(nn.Module):
                 val_accuracy = 0.0
                 for batch in validloader:
                     inputs = batch['image']
+                    meta = batch['meta']
                     labels = batch['label']
-                    inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
-                    outputs = self.forward(inputs)
+                    inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
+                    outputs = self.forward(image = inputs, meta=meta)
                     labels = labels.unsqueeze(1)
                     loss = self.loss_function(outputs, labels)
                     val_loss += loss.item()
@@ -110,9 +112,10 @@ class Model_extented(nn.Module):
         with torch.no_grad():
             for batch in dataloader:
                 inputs = batch['image']
+                meta = batch['meta']
                 labels = batch['label']
-                inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
-                outputs = self.forward(inputs)
+                inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
+                outputs = self.forward(image=inputs, meta=meta)
                 probs = torch.sigmoid(outputs)
                 # print("Max prob in batch:", probs.max().item())
 
@@ -138,9 +141,10 @@ class Model_extented(nn.Module):
         with torch.no_grad():
             for batch in dataloader:
                 inputs = batch['image']
+                meta = batch['meta']
                 labels = batch['label']
-                inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
-                outputs = self.forward(inputs)
+                inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
+                outputs = self.forward(image=inputs, meta=meta)
                 probs = torch.sigmoid(outputs)
 
                 all_labels.append(labels.cpu())
@@ -184,11 +188,13 @@ class Model_extented(nn.Module):
         self.model.eval()
         for batch in dataloader:
             inputs = batch['image']
+            meta = batch['meta']
             labels = batch['label']
             input_img = inputs[index].unsqueeze(0).float().to(self.device)
             input_img.requires_grad = True
+            meta = meta[index].float().to(self.device)
 
-            output = self.forward(input_img)
+            output = self.forward(input_img, meta)
             probs = torch.sigmoid(output)
 
             # Get the class with the highest predicted score
@@ -358,9 +364,10 @@ class Model_extented(nn.Module):
         with torch.no_grad():
             for batch in dataloader:
                 inputs = batch['image']
+                meta = batch['meta']
                 labels = batch['label']
-                inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
-                outputs = self.forward(inputs)
+                inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
+                outputs = self.forward(image=inputs, meta=meta)
                 probs = torch.sigmoid(outputs)
 
                 all_labels.append(labels.cpu())

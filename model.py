@@ -58,7 +58,76 @@ class Classifier_Many_Layers(nn.Module):
         x = self.relu(x)
         x = self.linear7(x)
         return x
+    
+class MLP(nn.Module):
+    def __init__(self, in_features):
+        super().__init__()
+        self.linear1 = nn.Linear(16, 16) # 16 = dim of meta data
+        self.linear2 = nn.Linear(16, in_features)
+        self.relu = nn.ReLU()
+    def forward(self, x):
+        x = self.linear1(x)
+        x = self.relu(x)
+        x = self.linear2(x)
+        return x
 
+class CombineModel(nn.Module):
+    def __init__(self, image_backbone, meta_backbone, classifier):
+        super().__init__()
+        self.image_backbone = image_backbone
+        self.meta_backbone = meta_backbone
+        self.classifier = classifier
+    def forward(self, image, meta):
+        image_output = self.image_backbone(image)
+        meta_output = self.meta_backbone(meta)
+        print("cnn shape:", image_output.shape)
+        print("mlp shape:", meta_output.shape)
+        combined = torch.cat((image_output, meta_output), dim=1)
+        print("Combined shape:", combined.shape)
+        output = self.classifier(combined)
+        return output
+
+# densenet169(pretrained = True) : pretrained on ImageNet
+# densenet169(pretrained = False) : pretrained on RSNA2019 data set (by winner)
+# densenet121(pretrained = True) : pretrained on ImageNet
+# densenet121(pretrained = False) : pretrained on RadImageNet
+def get_model(prob=0.5, image_backbone="densenet169", pretrained=True, classifier=Classifier):    
+    device = configs.device
+
+    if pretrained == True:
+        if image_backbone == "densenet169":
+            image_backbone = densenet169(pretrained=True)
+        if image_backbone == "densenet121":
+            image_backbone = densenet121(pretrained = True)
+
+    if pretrained == False : 
+        if image_backbone == "densenet121":
+            image_backbone = densenet121(pretrained = False)
+            state_dict=torch.load(f"{DATA_DIR}RadImageNet_pytorch/densenet121.pt", map_location = device)
+            missing_keys, unexpected_keys = image_backbone.load_state_dict(state_dict, strict=False)
+                        # 4. Afficher ce qui a été ignoré
+            print("⚠️ Clés manquantes dans le state_dict (non chargées) :", missing_keys[:10], len(missing_keys))
+            print("⚠️ Clés inattendues (ignorées car pas dans le modèle) :", unexpected_keys[:10], len(unexpected_keys))     
+        
+        if image_backbone == "densenet169":
+            image_backbone = densenet169(pretrained = False)
+            state_dict = torch.load(f"{DATA_DIR}model_epoch_best_4.pth", map_location=device)['state_dict']
+            state_dict = utils.adapt_name(state_dict)
+            image_backbone.load_state_dict(state_dict, strict=False)
+
+    # Freeze parameters so we don't backprop through them
+    for param in image_backbone.parameters():
+        param.requires_grad = False
+
+    meta_backbone = MLP(1000) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
+    classifier = classifier(2000, prob)  # 2000 = image_output.shape + meta_output.shape
+    model = CombineModel(image_backbone, meta_backbone, classifier)
+    
+    return model
+
+
+
+# For model pretrained by 2nd place on dataset RSNA2019 contest
 class Densenet169_onnx(nn.Module):
     def __init__(self):
         super().__init__()
@@ -86,43 +155,6 @@ class CombineBackboneClassifier(nn.Module):
             features = self.backbone(x)
         out = self.classifier(features)
         return out
-
-# densenet169(pretrained = True) : pretrained on ImageNet
-# densenet169(pretrained = False) : pretrained on RSNA2019 data set
-# densenet121(pretrained = True) : pretrained on ImageNet
-# densenet121(pretrained = False) : pretrained on RadImageNet
-def get_model(prob=0.5, model="densenet169", pretrained=True, classifier=Classifier):    
-    device = configs.device
-
-    if pretrained == True:
-        if model == "densenet169":
-            model = densenet169(pretrained=True)
-        if model == "densenet121":
-            model = densenet121(pretrained = True)
-
-    if pretrained == False : 
-        if model == "densenet121":
-            model = densenet121(pretrained = False)
-            state_dict=torch.load(f"{DATA_DIR}RadImageNet_pytorch/densenet121.pt", map_location = device)
-            missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
-                        # 4. Afficher ce qui a été ignoré
-            print("⚠️ Clés manquantes dans le state_dict (non chargées) :", missing_keys[:10], len(missing_keys))
-            print("⚠️ Clés inattendues (ignorées car pas dans le modèle) :", unexpected_keys[:10], len(unexpected_keys))     
-        
-        if model == "densenet169":
-            model = densenet169(pretrained = False)
-            state_dict = torch.load(f"{DATA_DIR}model_epoch_best_4.pth", map_location=device)['state_dict']
-            state_dict = utils.adapt_name(state_dict)
-            model.load_state_dict(state_dict, strict=False)
-
-    # Freeze parameters so we don't backprop through them
-    for param in model.parameters():
-        param.requires_grad = False
-    
-    in_features = model.classifier.in_features
-    model.classifier = classifier(in_features, prob)     
-    
-    return model
 
 def get_model_onnx(classifier = Classifier):
     model = CombineBackboneClassifier(backbone = Densenet169_onnx, classifier = classifier)

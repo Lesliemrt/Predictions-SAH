@@ -26,7 +26,7 @@ from model import get_model, Classifier, Classifier_Many_Layers
 # model = densenet169 or densenet121
 # pretrained = True for pretraining on ImageNet or False for pretraining on Medical Images
 # classifier = model.Classifier or model.Classifier_Many_Layers
-model = get_model(prob=0.5, model="densenet169", pretrained = False, classifier=Classifier_Many_Layers)
+model = get_model(prob=0.5, image_backbone="densenet169", pretrained = False, classifier=Classifier_Many_Layers)
 my_model=Model_extented(model, epochs=8, lr=1e-3)
 
 # Training
