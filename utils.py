@@ -46,6 +46,8 @@ def bsb_window(dcm):
 
 def _read(path):
     dcm = pydicom.dcmread(path)
+    # print("===================DCM ======================")
+    # print(dcm)
     # except Exception as e:
     #     # to delete when we will have all hospital data
     #     path_end=path.split(os.sep)[-5:]

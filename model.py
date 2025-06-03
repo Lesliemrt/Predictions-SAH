@@ -126,36 +126,44 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained=True, classifie
 
 
 
-# For model pretrained by 2nd place on dataset RSNA2019 contest
-class Densenet169_onnx(nn.Module):
+# For model pretrained by 2nd place on dataset RSNA2019 contest    
+class Densenet169_onnx(nn.Module): 
     def __init__(self):
         super().__init__()
+        providers = ['CPUExecutionProvider']
+        output_path = DATA_DIR + "densenet169_model.onnx"
+        self.m = rt.InferenceSession(output_path, providers=providers)
+        self.input_name = self.m.get_inputs()[0].name
 
     def forward(self, x):
-        providers = ['CPUExecutionProvider']
-        output_path = DATA_DIR+"densenet169_model.onnx"
-        m = rt.InferenceSession(output_path, providers=providers)
-        input_name = m.get_inputs()[0].name
-
-        x_numpy = x.detach().cpu().numpy()
-        onnx_pred = self.m.run(None, {input_name: x_numpy})
-        features = torch.tensor(onnx_pred[0])
+        device = configs.device
+        x_numpy = x.permute(0, 2, 3, 1).detach().cpu().numpy()
+        onnx_pred = self.m.run(None, {self.input_name: x_numpy})
+        features = torch.tensor(onnx_pred[0], dtype=torch.float32, device=device)  # force device
         return features
 
-class CombineBackboneClassifier(nn.Module):
-    def __init__(self, backbone, classifier):
+
+class CombineModel_onnx(nn.Module):
+    def __init__(self, image_backbone, meta_backbone, classifier):
         super().__init__()
-        self.backbone = backbone
+        self.image_backbone = image_backbone
+        self.meta_backbone = meta_backbone
         self.classifier = classifier
+    def forward(self, image, meta):
+        with torch.no_grad():
+            image_output = self.image_backbone(image)
+        meta_output = self.meta_backbone(meta)
+        if meta_output.dim() == 1:
+            meta_output = meta_output.unsqueeze(0)
+        combined = torch.cat((image_output, meta_output), dim=1)
+        output = self.classifier(combined)
+        return output
 
-    def forward(self, x):
-        print("model densenet169 avec poids onnx pretrained on RSNA")
-        with torch.no_grad():  # on ne backprop pas sur ONNX
-            features = self.backbone(x)
-        out = self.classifier(features)
-        return out
 
-def get_model_onnx(classifier = Classifier):
-    model = CombineBackboneClassifier(backbone = Densenet169_onnx, classifier = classifier)
+def get_model_onnx(classifier_class=Classifier, in_features=2000, prob=0.5):
+    image_backbone = Densenet169_onnx()
+    meta_backbone = MLP(1000)
+    classifier = classifier_class(in_features, prob)
+    model = CombineModel_onnx(image_backbone=image_backbone, meta_backbone = meta_backbone, classifier=classifier)
     return model
 
