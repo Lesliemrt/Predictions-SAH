@@ -1,7 +1,10 @@
 #data
 hospital_data_1/
 hospital_data_1_/
-hospital_data_1.zip
+*.zip
+hospital_data_2/
+OneDrive_1_02_06_2025/
+OneDrive_2_02_06_2025/
 
 # plot
 results/
@@ -10,6 +13,7 @@ results/
 *.h5
 **/__pycache__/
 *.onnx
+*.xlsx#
 
 #results (not useful)
 non_existant_file.xlsx
