@@ -26,8 +26,8 @@ from model import get_model, Classifier, Classifier_Many_Layers
 # model = densenet169 or densenet121
 # pretrained = True for pretraining on ImageNet or False for pretraining on Medical Images
 # classifier = model.Classifier or model.Classifier_Many_Layers
-model = get_model(prob=0.5, image_backbone="densenet169", pretrained = False, classifier=Classifier_Many_Layers)
-my_model=Model_extented(model, epochs=8, lr=1e-3)
+model = get_model(prob=0.5, image_backbone="densenet169", pretrained = False, classifier=Classifier)
+my_model=Model_extented(model, epochs=7, lr=1e-3)
 
 # Training
 my_model.trainloop(trainloader, validloader, testloader)
@@ -61,18 +61,16 @@ plt.close()
 # print(f"accuracy/len(validloader) : {eval_performance_valid[0]}, recall : {eval_performance_valid[1]}")
 
 # Saliency maps
-print(my_model.saliency(testloader, index=1))
+print(my_model.saliency(testloader, num_images_to_show=10))
 
 # Grad cam
-print(my_model.gradcam(testloader, index = 0))
-
-# print(my_model.visualize_predictions(train_df, 10))
+# print(my_model.gradcam(testloader, index = 0))
 
 # Results testloader (to save time)
 all_labels, all_probs = my_model.return_outputs(testloader)       
 
 # Save the results
-all_preds = (all_probs >= 0.5).astype(int)
+all_preds = (all_probs >= 0.3).astype(int)
 df = pd.DataFrame({
     "True label": all_labels,
     "Predicted label": all_preds,

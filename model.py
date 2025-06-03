@@ -62,8 +62,8 @@ class Classifier_Many_Layers(nn.Module):
 class MLP(nn.Module):
     def __init__(self, in_features):
         super().__init__()
-        self.linear1 = nn.Linear(16, 16) # 16 = dim of meta data
-        self.linear2 = nn.Linear(16, in_features)
+        self.linear1 = nn.Linear(6, 6) # 6 = dim of meta data
+        self.linear2 = nn.Linear(6, in_features)
         self.relu = nn.ReLU()
     def forward(self, x):
         x = self.linear1(x)
@@ -80,10 +80,9 @@ class CombineModel(nn.Module):
     def forward(self, image, meta):
         image_output = self.image_backbone(image)
         meta_output = self.meta_backbone(meta)
-        print("cnn shape:", image_output.shape)
-        print("mlp shape:", meta_output.shape)
+        if meta_output.dim() == 1:
+            meta_output = meta_output.unsqueeze(0)
         combined = torch.cat((image_output, meta_output), dim=1)
-        print("Combined shape:", combined.shape)
         output = self.classifier(combined)
         return output
 

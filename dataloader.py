@@ -67,15 +67,13 @@ class TrainDataset(Dataset):
         age = torch.tensor([self.dataset['Age'].iloc[index]], dtype=torch.float32)
         saps2 = torch.tensor([self.dataset['SAPSII'].iloc[index]], dtype=torch.float32)
         gcs = torch.tensor([self.dataset['GCS'].iloc[index]], dtype=torch.float32)
+        fisher = torch.tensor([self.dataset['Fisher'].iloc[index]], dtype=torch.float32)
         sex = self.dataset['Sex'].iloc[index]
         sex = F.one_hot(torch.tensor(sex, dtype=torch.long), num_classes=2).float()
-        fisher = self.dataset['Fisher'].iloc[index]
-        fisher = fisher - 1
-        fisher = F.one_hot(torch.tensor(fisher, dtype=torch.long), num_classes=4).float()
-        aneurysm = self.dataset['Aneurysm'].iloc[index]
-        aneurysm = F.one_hot(torch.tensor(aneurysm, dtype=torch.long), num_classes=7).float()
+        # aneurysm = self.dataset['Aneurysm'].iloc[index]
+        # aneurysm = F.one_hot(torch.tensor(aneurysm, dtype=torch.long), num_classes=7).float()
 
-        meta = torch.cat([age, sex, saps2, gcs, fisher, aneurysm], dim=0)
+        meta = torch.cat([age, sex, saps2, gcs, fisher], dim=0)
         # label
         label = torch.tensor(self.labels.iloc[index], dtype=torch.float32)
 
@@ -156,13 +154,9 @@ metadata_df = metadata_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'An
 metadata_df = metadata_df.rename(columns={'Edad':'Age','Sexo':'Sex', 'Aneurisma':'Aneurysm'})
 metadata_df = metadata_df[:197] # Delete the last lines of the excel that contains totals
 
-print("MIIIIINININIININI3", metadata_df['Fisher'].value_counts())
-
 # Add metadata to data_df
 data_df['HSA'] = data_df['Path'].apply(lambda x: x.split('/')[patiente])
 data_df = pd.merge(data_df, metadata_df, on='HSA', how='left')
-
-print(data_df.tail(2))
 
 # Everything inside create_dataloader to be able to change the seed with main_40_iterations
 def create_dataloader():

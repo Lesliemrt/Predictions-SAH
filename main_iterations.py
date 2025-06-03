@@ -36,7 +36,7 @@ for k in range(nb_iterations):
 
     # Load model
     from model import get_model, Classifier, Classifier_Many_Layers
-    model = get_model(prob=0.5, model="densenet169", pretrained = False, classifier=Classifier_Many_Layers) #prob = prob for dropout
+    model = get_model(prob=0.5, image_backbone="densenet169", pretrained = False, classifier=Classifier) #prob = prob for dropout
     my_model=Model_extented(model, epochs=7, lr=1e-3)
 
     # Training
@@ -71,8 +71,9 @@ plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
-plt.title(f'Receiver Operating Characteristic Curve')
-plt.legend(loc="lower right")
+plt.title(f'Receiver Operating Characteristic Curve \n Average ROC AUC: {avg_roc_auc}')
+if nb_iterations<10 :
+    plt.legend(loc="lower right")
 plt.tight_layout()
 # plt.show()
 plt.savefig(f"{configs.DATA_DIR}/results/auc roc iterations.png") 

@@ -119,7 +119,7 @@ class Model_extented(nn.Module):
                 probs = torch.sigmoid(outputs)
                 # print("Max prob in batch:", probs.max().item())
 
-                predicted_labels = (probs > 0.3).float() # Get predicted labels based on threshold
+                predicted_labels = (probs > 0.5).float() # Get predicted labels based on threshold
                 labels = labels.unsqueeze(1)
                 equals = (predicted_labels == labels) # Compare predicted and actual labels
                 # accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
@@ -184,44 +184,46 @@ class Model_extented(nn.Module):
         self.model.train()
 
 
-    def saliency(self, dataloader, index):
+    def saliency(self, dataloader, num_images_to_show):
         self.model.eval()
-        for batch in dataloader:
-            inputs = batch['image']
-            meta = batch['meta']
-            labels = batch['label']
-            input_img = inputs[index].unsqueeze(0).float().to(self.device)
-            input_img.requires_grad = True
-            meta = meta[index].float().to(self.device)
+        for i in range(num_images_to_show):
+            for batch in dataloader:
+                inputs = batch['image']
+                meta = batch['meta']
+                labels = batch['label']
+                batch_size = inputs.size(0)
+                index = np.random.randint(0, batch_size-1)
+                input_img = inputs[index].unsqueeze(0).float().to(self.device)
+                input_img.requires_grad = True
+                meta = meta[index].float().to(self.device)
 
-            output = self.forward(input_img, meta)
-            probs = torch.sigmoid(output)
+                output = self.forward(input_img, meta)
+                probs = torch.sigmoid(output)
 
-            # Get the class with the highest predicted score
-            score, _ = torch.max(probs, dim=1)
-            score.backward()
-            # Get the saliency map: max of gradients across channels
-            saliency_map, _ = torch.max(torch.abs(input_img.grad[0]), dim=0)
-            saliency_map = (saliency_map - saliency_map.min()) / (saliency_map.max() - saliency_map.min())
+                # Get the class with the highest predicted score
+                score, _ = torch.max(probs, dim=1)
+                score.backward()
+                # Get the saliency map: max of gradients across channels
+                saliency_map, _ = torch.max(torch.abs(input_img.grad[0]), dim=0)
+                saliency_map = (saliency_map - saliency_map.min()) / (saliency_map.max() - saliency_map.min())
 
-            # Visualization
-            plt.figure(figsize=(10, 5))
-            plt.subplot(1, 2, 1)
-            img_np = input_img.detach().cpu().squeeze().permute(1, 2, 0).numpy()
-            plt.imshow(img_np, cmap='gray' if img_np.shape[2] == 1 else None)
-            plt.title(f"Original Image (label = {labels[index]})")
-            plt.axis("off")
-            plt.subplot(1, 2, 2)
-            plt.imshow(saliency_map.cpu(), cmap='hot')
-            plt.title("Saliency Map")
-            plt.axis("off")
-            plt.tight_layout()
-            # plt.show()
-            plt.savefig(f"{configs.DATA_DIR}/results/saliency.png") 
-            plt.close()
+                # Visualization
+                plt.figure(figsize=(10, 5))
+                plt.subplot(1, 2, 1)
+                img_np = input_img.detach().cpu().squeeze().permute(1, 2, 0).numpy()
+                plt.imshow(img_np, cmap='gray' if img_np.shape[2] == 1 else None)
+                plt.title(f"Original Image (label = {labels[index]})")
+                plt.axis("off")
+                plt.subplot(1, 2, 2)
+                plt.imshow(img_np, cmap='gray' if img_np.shape[2] == 1 else None)
+                plt.imshow(saliency_map.cpu(), cmap='hot', alpha=0.7)
+                plt.title("Saliency Map")
+                plt.axis("off")
+                plt.tight_layout()
+                # plt.show()
+                plt.savefig(f"{configs.DATA_DIR}/results/saliency{index}.png") 
+                plt.close()
 
-
-            break  # Only one image
         self.model.train()
     
     def gradcam(self, dataloader, index):
