@@ -70,6 +70,11 @@ def ajust_path(identifier):
     path = f"{configs.DATA_DIR}hospital_data_1/raw data/{paciente}/DICOM/ST00001/{serie}/{imagen}"
     return path
 
+def ajust_path_data2(identifier):
+    patient, id1, id2, id3, image = identifier.split('-')
+    path = f"{configs.DATA_DIR}hospital_data_2/{patient}/{id1}/{id2}/{id3}/{image}"
+    return path
+
 # Visualize random images from a dataset before training
 def visualize(num_images_to_show, train_df):
     _ , axs = plt.subplots(1, num_images_to_show, figsize=(20, 5))
@@ -104,3 +109,64 @@ def adapt_name(state_dict):
         # name = k.replace('module.', '')
         new_state_dict[name] = v
     return new_state_dict
+
+# Normalize min max between 0 and 1
+def normalize_min_max(x, min, max):
+    return (x - min) / (max - min)
+
+def normalize_min_max_inverted(x, min, max):
+    return (max - x) / (max - min)
+
+
+
+
+# Other preprocessing
+def get_first_of_dicom_field_as_int(x):
+    if type(x) == pydicom.multival.MultiValue:
+        return int(x[0])
+    return int(x)
+
+def get_id(img_dicom):
+    return str(img_dicom.SOPInstanceUID)
+
+def get_metadata_from_dicom(img_dicom):
+    metadata = {
+        # "window_center": img_dicom.WindowCenter,
+        # "window_width": img_dicom.WindowWidth,
+        "intercept": img_dicom.RescaleIntercept,
+        "slope": img_dicom.RescaleSlope,
+    }
+    return {k: get_first_of_dicom_field_as_int(v) for k, v in metadata.items()}
+
+def window_image_new(img, window_center, window_width, intercept, slope):
+    img = img.astype(np.float32) * slope + intercept
+    img_min = window_center - window_width // 2
+    img_max = window_center + window_width // 2
+    img = np.clip(img, img_min, img_max)
+    return img 
+
+def normalize_minmax(img):
+    mi, ma = img.min(), img.max()
+    return (img - mi) / (ma - mi)
+
+def _read_new(img_path):
+    img_dicom = pydicom.dcmread(img_path)
+    metadata = get_metadata_from_dicom(img_dicom)
+    raw_img = img_dicom.pixel_array
+
+    # 3 standard windows for head CT
+    windows = [
+        {"center": 40, "width": 80},    # brain
+        {"center": 80, "width": 200},   # subdural
+        {"center": 40, "width": 380}    # soft tissue
+    ]
+
+    channels = []
+    for win in windows:
+        img = window_image_new(raw_img, win["center"], win["width"], **metadata)
+        img = normalize_minmax(img) * 255.0
+        img_tensor = torch.tensor(img, dtype=torch.float32)
+        channels.append(img_tensor)
+
+    img = torch.stack(channels)  # Shape: [3, H, W]
+    return img

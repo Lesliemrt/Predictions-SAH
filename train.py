@@ -166,7 +166,7 @@ class Model_extented(nn.Module):
                 img_path = df['Path'].iloc[random_index]
                 label = df['ANY_Vasospasm'].iloc[random_index]
 
-                img = utils._read(img_path)
+                img = utils._read_new(img_path)
 
                 img = img.float().unsqueeze(0).to(self.device)
                 output = self.forward(img)
@@ -193,7 +193,7 @@ class Model_extented(nn.Module):
                 labels = batch['label']
                 batch_size = inputs.size(0)
                 index = np.random.randint(0, batch_size-1)
-                input_img = inputs[index].unsqueeze(0).float().to(self.device)
+                input_img = inputs[index].unsqueeze(0).float().to(self.device).detach().clone()
                 input_img.requires_grad = True
                 meta = meta[index].float().to(self.device)
 
