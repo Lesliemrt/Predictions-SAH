@@ -55,7 +55,8 @@ class TrainDataset(Dataset):
         # image
         image_path = self.dataset['Path'].iloc[index]
 
-        image = utils._read(image_path)
+        image = utils._read(image_path) # size : torch.Size([3, 256, 256])
+        # print("SIIIIIIIIIZZZZZZZZZZZZZZZZZZZZZZEEEEEEE ================ : ", image.size())
 
         if image is None:
             raise FileNotFoundError(f"Image not found : {image_path}")
@@ -65,15 +66,21 @@ class TrainDataset(Dataset):
 
         # metadata
         age = torch.tensor([self.dataset['Age'].iloc[index]], dtype=torch.float32)
+        age = utils.normalize_min_max(age, 18, 100)
         saps2 = torch.tensor([self.dataset['SAPSII'].iloc[index]], dtype=torch.float32)
+        saps2 = utils.normalize_min_max(saps2, 0, 69)
         gcs = torch.tensor([self.dataset['GCS'].iloc[index]], dtype=torch.float32)
+        gcs = utils.normalize_min_max_inverted(gcs, 3, 15)
         fisher = torch.tensor([self.dataset['Fisher'].iloc[index]], dtype=torch.float32)
+        fisher = utils.normalize_min_max(fisher, 1, 4)
+        hunthess = torch.tensor([self.dataset['HuntHess'].iloc[index]], dtype=torch.float32)
+        hunthess = utils.normalize_min_max(hunthess, 1, 5)
+        wfns = torch.tensor([self.dataset['WFNS'].iloc[index]], dtype=torch.float32)
+        wfns = utils.normalize_min_max(wfns, 1, 5)
         sex = self.dataset['Sex'].iloc[index]
-        sex = F.one_hot(torch.tensor(sex, dtype=torch.long), num_classes=2).float()
-        # aneurysm = self.dataset['Aneurysm'].iloc[index]
-        # aneurysm = F.one_hot(torch.tensor(aneurysm, dtype=torch.long), num_classes=7).float()
+        sex = F.one_hot(torch.tensor(sex, dtype=torch.long), num_classes=2).float() # dim = 2
 
-        meta = torch.cat([age, sex, saps2, gcs, fisher], dim=0)
+        meta = torch.cat([age, sex, saps2, gcs, fisher, hunthess, wfns], dim=0) # dim = 8
         # label
         label = torch.tensor(self.labels.iloc[index], dtype=torch.float32)
 
@@ -150,8 +157,8 @@ patient_df = patient_df.groupby("HSA")["ANY_Vasospasm"].max().reset_index()  # p
 
 """DATA FRAME META DATA"""
 metadata_df = pd.read_excel('excel_predicciones.xlsx', sheet_name='datos hospital')
-metadata_df = metadata_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'Aneurisma']]
-metadata_df = metadata_df.rename(columns={'Edad':'Age','Sexo':'Sex', 'Aneurisma':'Aneurysm'})
+metadata_df = metadata_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'HuntHess', 'WFNS']]
+metadata_df = metadata_df.rename(columns={'Edad':'Age','Sexo':'Sex'})
 metadata_df = metadata_df[:197] # Delete the last lines of the excel that contains totals
 
 # Add metadata to data_df
