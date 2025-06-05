@@ -62,8 +62,8 @@ class Classifier_Many_Layers(nn.Module):
 class MLP(nn.Module):
     def __init__(self, in_features):
         super().__init__()
-        self.linear1 = nn.Linear(6, 6) # 6 = dim of meta data
-        self.linear2 = nn.Linear(6, in_features)
+        self.linear1 = nn.Linear(8, 8) # 6 = dim of meta data
+        self.linear2 = nn.Linear(8, in_features)
         self.relu = nn.ReLU()
     def forward(self, x):
         x = self.linear1(x)
@@ -72,25 +72,29 @@ class MLP(nn.Module):
         return x
 
 class CombineModel(nn.Module):
-    def __init__(self, image_backbone, meta_backbone, classifier):
+    def __init__(self, image_backbone, meta_backbone, classifier, metadata):
         super().__init__()
         self.image_backbone = image_backbone
         self.meta_backbone = meta_backbone
         self.classifier = classifier
+        self.metadata = metadata
     def forward(self, image, meta):
         image_output = self.image_backbone(image)
         meta_output = self.meta_backbone(meta)
         if meta_output.dim() == 1:
             meta_output = meta_output.unsqueeze(0)
         combined = torch.cat((image_output, meta_output), dim=1)
-        output = self.classifier(combined)
+        if self.metadata == True:
+            output = self.classifier(combined)
+        else : 
+            output = self.classifier(image_output)
         return output
 
 # densenet169(pretrained = True) : pretrained on ImageNet
 # densenet169(pretrained = False) : pretrained on RSNA2019 data set (by winner)
 # densenet121(pretrained = True) : pretrained on ImageNet
 # densenet121(pretrained = False) : pretrained on RadImageNet
-def get_model(prob=0.5, image_backbone="densenet169", pretrained=True, classifier=Classifier):    
+def get_model(prob=0.5, image_backbone="densenet169", pretrained=True, classifier=Classifier, metadata = True):    
     device = configs.device
 
     if pretrained == True:
@@ -119,8 +123,11 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained=True, classifie
         param.requires_grad = False
 
     meta_backbone = MLP(1000) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
-    classifier = classifier(2000, prob)  # 2000 = image_output.shape + meta_output.shape
-    model = CombineModel(image_backbone, meta_backbone, classifier)
+    if metadata == True : 
+        classifier = classifier(2000, prob)  # 2000 = image_output.shape + meta_output.shape
+    else : 
+        classifier = classifier(1000, prob)
+    model = CombineModel(image_backbone, meta_backbone, classifier, metadata)
     
     return model
 
@@ -150,8 +157,7 @@ class CombineModel_onnx(nn.Module):
         self.meta_backbone = meta_backbone
         self.classifier = classifier
     def forward(self, image, meta):
-        with torch.no_grad():
-            image_output = self.image_backbone(image)
+        image_output = self.image_backbone(image) # not trainable
         meta_output = self.meta_backbone(meta)
         if meta_output.dim() == 1:
             meta_output = meta_output.unsqueeze(0)

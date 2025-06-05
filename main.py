@@ -9,6 +9,7 @@ import dataloader
 import utils
 import train
 import configs
+from model import get_model, get_model_onnx, Classifier, Classifier_Many_Layers
 
 # For reproductibility
 np.random.seed(SEED)
@@ -21,14 +22,13 @@ torch.backends.cudnn.benchmark = False
 trainloader, validloader, testloader = dataloader.create_dataloader()
 
 # Load model
-from model import get_model, get_model_onnx, Classifier, Classifier_Many_Layers
 # prob = prob for dropout
 # model = densenet169 or densenet121
 # pretrained = True for pretraining on ImageNet or False for pretraining on Medical Images
 # classifier = model.Classifier or model.Classifier_Many_Layers
-# model = get_model(prob=0.5, image_backbone="densenet169", pretrained = False, classifier=Classifier)
-model = get_model_onnx(classifier_class=Classifier, in_features=1664, prob=0.5)
-my_model=Model_extented(model, epochs=12, lr=1e-3)
+model = get_model(prob=0.5, image_backbone="densenet169", pretrained = True, classifier=Classifier, metadata = True)
+# model = get_model_onnx(classifier_class=Classifier, in_features=2664, prob=0.5)
+my_model=Model_extented(model, epochs=7, lr=1e-3)
 
 # Training
 my_model.trainloop(trainloader, validloader, testloader)

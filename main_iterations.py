@@ -16,7 +16,7 @@ auc_values = []
 training_accuracy_values = []
 validation_accuracy_values = []
 lw = 2 #line width
-nb_iterations = 10
+nb_iterations = 20
 
 plt.figure()
 for k in range(nb_iterations):
