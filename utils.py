@@ -6,6 +6,7 @@ import os
 import matplotlib.pyplot as plt
 import pydicom
 from collections import OrderedDict
+from torch.utils.data.dataloader import default_collate
 
 import configs
 
@@ -117,7 +118,12 @@ def normalize_min_max(x, min, max):
 def normalize_min_max_inverted(x, min, max):
     return (max - x) / (max - min)
 
-
+def collate_remove_none(batch):
+    # Supprime les items où 'image' est None
+    batch = [item for item in batch if item is not None]
+    if len(batch) == 0:
+        return None
+    return default_collate(batch)
 
 
 # Other preprocessing

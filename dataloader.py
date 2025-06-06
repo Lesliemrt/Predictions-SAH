@@ -88,22 +88,22 @@ class TrainDataset(Dataset):
 
 # To predict probabilities on new data without labels (not used for now)
 class TestDataset(Dataset):
-    def __init__(self, dataset, labels, batch_size = 16, img_size = (configs.CHANNELS, configs.HEIGHT, configs.WIDTH), img_dir = configs.TEST_IMAGES_DIR, *args, **kwargs):
+    def __init__(self, dataset, batch_size, img_size = (configs.CHANNELS, configs.HEIGHT, configs.WIDTH)):
         self.dataset = dataset
         self.ids = dataset.index.tolist()
-        self.labels = labels
         self.img_size = img_size
 
     def __len__(self):
         return len(self.ids)
 
     def __getitem__(self, index):
-        image_path = self.df['Path'].iloc[index]
+        image_path = self.dataset['Path'].iloc[index]
 
         image = utils._read(image_path)
 
-        if image is None:
-            raise FileNotFoundError(f"Image not found : {image_path}")
+        # if image is None:
+        #     # raise FileNotFoundError(f"Image not found : {image_path}")
+        #     return None
 
         # # Normalize
         # image = cv2.resize(image, (self.img_size[1], self.img_size[0]))
@@ -112,7 +112,7 @@ class TestDataset(Dataset):
 
         label = torch.zeros(6)
 
-        return image, label
+        return {'image':image, 'label':label}
 
 
 """TRAINING VALID AND TEST DATASET"""

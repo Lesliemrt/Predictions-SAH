@@ -26,7 +26,7 @@ trainloader, validloader, testloader = dataloader.create_dataloader()
 # model = densenet169 or densenet121
 # pretrained = True for pretraining on ImageNet or False for pretraining on Medical Images
 # classifier = model.Classifier or model.Classifier_Many_Layers
-model = get_model(prob=0.5, image_backbone="densenet169", pretrained = True, classifier=Classifier, metadata = True)
+model = get_model(prob=0.5, image_backbone="densenet169", pretrained = False, classifier=Classifier, metadata = True)
 # model = get_model_onnx(classifier_class=Classifier, in_features=2664, prob=0.5)
 my_model=Model_extented(model, epochs=7, lr=1e-3)
 
