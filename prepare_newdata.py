@@ -14,12 +14,15 @@ import configs
 import utils
 from dataloader import TestDataset
 
+# To make sah predictions with pretrained model on hospital_data_2
+
 # Create an excel with identifier for each image
 images = []
 identifiers = []
 # Loop through each image file
 all_patients = os.listdir(f"{configs.DATA_DIR}hospital_data_2")
 all_patients.remove('HSA 242')
+all_patients.sort()
 for patient in all_patients:
     all_id1 = os.listdir(f"{configs.DATA_DIR}hospital_data_2/{patient}")
     files = ['DICOMDIR', 'IHE_PDI', 'INDEX.HTM', 'RUN.CMD', 'JRE', 'XTR_CONT', 'REPORT', 'PLUGINS', 'README.TXT', 'RUN.COMMAND', 'AUTORUN.INF', 'LOG4J.XML', 'HELP', 'CDVIEWER.EXE', 'RUN.SH']
@@ -53,8 +56,6 @@ for i in range(len(predictions_df)):
 print("len de invalid_paths : ",len(invalid_paths))
 predictions_df = predictions_df[predictions_df['Path'].isin(invalid_paths) == False].reset_index(drop=True)
 
-print(predictions_df)
-
 # Visualize an image with preprocessing
 # image_path = utils.ajust_path_data2(predictions_df['Identifier'][0])
 # print(image_path)
@@ -62,7 +63,7 @@ print(predictions_df)
 # image = image.permute(1, 2, 0).cpu().numpy()
 # plt.axis('off')
 # plt.imshow(image)
-# plt.savefig(f"{configs.DATA_DIR}/results/visualize new data test.png") 
+# plt.savefig(f"{configs.DIR}/results/visualize new data test.png") 
 # plt.close()
 
 # Dataloader for predictions
@@ -93,10 +94,12 @@ class DenseNet169_change_avg(nn.Module):
         return x
 
 # Load model + weights
+# Model 1
 my_model = DenseNet169_change_avg()
 state_dict = torch.load(f"{configs.DATA_DIR}model_epoch_best_4.pth", map_location=configs.device)['state_dict']
 state_dict = utils.adapt_name(state_dict)
 my_model.load_state_dict(state_dict, strict=False)
+
 
 # Predicts
 my_model.to(configs.device)
@@ -117,4 +120,7 @@ hemorrhage_types = ['any', 'epidural', 'intraparenchymal', 'intraventricular', '
 for i, col in enumerate(hemorrhage_types):
     predictions_df[col] = all_probs[:, i]
 
-print(predictions_df.head(50))
+print("predictions_df")
+print(predictions_df)
+predictions_df.to_excel('predictions_new_data.xlsx', index=False)
+

@@ -136,7 +136,7 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
 
 
 
-# For model pretrained by 2nd place on dataset RSNA2019 contest    
+# For model pretrained by jaymin on dataset RSNA2019 contest    
 class Densenet169_onnx(nn.Module): 
     def __init__(self):
         super().__init__()
@@ -207,3 +207,15 @@ class DenseNet169_change_avg(nn.Module):
 
         return x
 
+class Model_6_classes(nn.Module):
+    def __init__(self,prob):
+        super().__init__()
+        self.base_model = densenet169(pretrained=False)
+        self.base_model.classifier = nn.Identity()
+        self.linear = nn.Linear(1664, 6)
+        self.dropout = nn.Dropout(p=prob)
+    def forward(self, x):
+        x = self.base_model(x)
+        x = self.dropout(x)
+        x = self.linear(x)
+        return x
