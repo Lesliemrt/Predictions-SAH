@@ -99,7 +99,7 @@ def visualize(num_images_to_show, train_df):
         axs[i].set_title(f"Index: {random_index}, Etiqueta: {label}")
         axs[i].axis('off')
     plt.tight_layout()
-    plt.savefig(f"{configs.DATA_DIR}/results/visualize before training.png") 
+    plt.savefig(f"{configs.DIR}/results/visualize before training.png") 
     plt.close()
 
 # Remove .module dans state_dict and change features to densenet169 so the weights match

@@ -178,7 +178,7 @@ def _reliability_diagram_combined(bin_data,
     ax[1].set_yticklabels(new_ticks)    
 
     # plt.show()
-    plt.savefig(f"{configs.DATA_DIR}/results/calibration.png") 
+    plt.savefig(f"{configs.DIR}/results/calibration.png") 
     plt.close()
 
 
@@ -280,7 +280,7 @@ def reliability_diagrams(results, num_bins=10,
         ax[row, col].axis("off")
         
     # plt.show()
-    plt.savefig(f"{configs.DATA_DIR}/results/calibration for more than one model.png") 
+    plt.savefig(f"{configs.DIR}/results/calibration for more than one model.png") 
     plt.close()
 
 

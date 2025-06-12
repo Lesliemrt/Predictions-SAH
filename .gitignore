@@ -8,6 +8,7 @@ OneDrive_1_02_06_2025/
 OneDrive_2_02_06_2025/
 OneDrive_2_03_06_2025/
 OneDrive_1_03_06_2025/
+*.json
 
 # plot
 results/
@@ -17,6 +18,13 @@ results/
 **/__pycache__/
 *.onnx
 *.xlsx#
+*.pth
+RadImageNet_pytorch/
+
+#tests for datapreprocessing
+test_prepare_data.py
+test_predictions.xlsx
+predictions_new_data.xlsx
 
 #results (not useful)
 non_existant_file.xlsx

@@ -117,7 +117,7 @@ class TestDataset(Dataset):
 
 """TRAINING VALID AND TEST DATASET"""
 # Read the excel with new label
-new_label_df = pd.read_excel('excel_predicciones.xlsx', sheet_name='selected_cortes')
+new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='selected_cortes')
 new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
 
 # Create the DataFrame for the dataset
@@ -149,14 +149,14 @@ print("data_df after : ","count 1 : ", count_1, "count 0 : ", count_0)
 # test_patients = unique_patients[split_idx_valid:]
 
 # Stratified split in patients 
-patiente = 8 #index of {patiente} in the path
+patiente = configs.patient #index of {patiente} in the path
 patient_df = data_df.copy()
 patient_df["HSA"] = patient_df["Path"].apply(lambda x: x.split('/')[patiente])
 patient_df = patient_df.groupby("HSA")["ANY_Vasospasm"].max().reset_index()  # patient's label = 1 if at least one image is positive
 
 
 """DATA FRAME META DATA"""
-metadata_df = pd.read_excel('excel_predicciones.xlsx', sheet_name='datos hospital')
+metadata_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
 metadata_df = metadata_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'HuntHess', 'WFNS']]
 metadata_df = metadata_df.rename(columns={'Edad':'Age','Sexo':'Sex'})
 metadata_df = metadata_df[:197] # Delete the last lines of the excel that contains totals
@@ -191,10 +191,10 @@ def create_dataloader():
     # Oversampling for class 1 (~ 28% of 1) only for training !!
 
     # Method oversampling 1 (nb class 1 = nb class 0)
-    count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
-    df_oversampled = train_df[train_df["ANY_Vasospasm"] == 1].sample(count_0, replace=True, random_state=configs.SEED)
-    df_balanced = pd.concat([train_df[train_df["ANY_Vasospasm"] == 0], df_oversampled])
-    train_df = df_balanced.sample(frac=1, random_state=configs.SEED).reset_index(drop=True)
+    # count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
+    # df_oversampled = train_df[train_df["ANY_Vasospasm"] == 1].sample(count_0, replace=True, random_state=configs.SEED)
+    # df_balanced = pd.concat([train_df[train_df["ANY_Vasospasm"] == 0], df_oversampled])
+    # train_df = df_balanced.sample(frac=1, random_state=configs.SEED).reset_index(drop=True)
 
     # Method oversampling 2 (double class 1)
     # vasospasm_df = train_df[train_df["ANY_Vasospasm"] == 1]

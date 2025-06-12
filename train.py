@@ -178,7 +178,7 @@ class Model_extented(nn.Module):
                 plt.title(f"Réel: {label}, Prédiction: {probs.item():.4f}")
                 plt.axis("off")
                 # plt.show()
-                plt.savefig(f"{configs.DATA_DIR}/results/visualize predictions.png") 
+                plt.savefig(f"{configs.DIR}/results/visualize predictions.png") 
                 plt.close()
 
         self.model.train()
@@ -221,7 +221,7 @@ class Model_extented(nn.Module):
                 plt.axis("off")
                 plt.tight_layout()
                 # plt.show()
-                plt.savefig(f"{configs.DATA_DIR}/results/saliency{index}.png") 
+                plt.savefig(f"{configs.DIR}/results/saliency{index}.png") 
                 plt.close()
 
         self.model.train()
@@ -259,7 +259,7 @@ class Model_extented(nn.Module):
 
         plt.tight_layout()
         # plt.show()
-        plt.savefig(f"{configs.DATA_DIR}/results/grad cam.png") 
+        plt.savefig(f"{configs.DIR}/results/grad cam.png") 
         plt.close()
 
     def eval_performance(self, all_labels, all_probs):
@@ -287,7 +287,7 @@ class Model_extented(nn.Module):
         plt.title(f'Receiver Operating Characteristic Curve (Seed: {configs.SEED})')
         plt.legend(loc="lower right")
         # plt.show()
-        plt.savefig(f"{configs.DATA_DIR}/results/auc roc curve.png") 
+        plt.savefig(f"{configs.DIR}/results/auc roc curve.png") 
         plt.close()
 
         self.model.train()

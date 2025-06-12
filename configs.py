@@ -13,8 +13,11 @@ TRAIN_BATCH_SIZE = 32
 VALID_BATCH_SIZE = 32
 TEST_BATCH_SIZE = 32
 
+patient = 9 #index of {patiente} in the path (hospital_data_1)
+
 # Folders
-DATA_DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/'
+DATA_DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/Data/'
+DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/'
 
 # Ro run on gpu if available
 import torch
