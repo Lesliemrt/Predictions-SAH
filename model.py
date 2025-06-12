@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torchvision.models import resnet50, densenet121, densenet169
 import onnxruntime as rt
-from configs import DATA_DIR
+from configs import DATA_DIR, DIR
 import configs
 import utils
 
@@ -90,20 +90,22 @@ class CombineModel(nn.Module):
             output = self.classifier(image_output)
         return output
 
-# densenet169(pretrained = True) : pretrained on ImageNet
-# densenet169(pretrained = False) : pretrained on RSNA2019 data set (by winner)
-# densenet121(pretrained = True) : pretrained on ImageNet
-# densenet121(pretrained = False) : pretrained on RadImageNet
-def get_model(prob=0.5, image_backbone="densenet169", pretrained=True, classifier=Classifier, metadata = True):    
+def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", classifier=Classifier, metadata = True):    
     device = configs.device
 
-    if pretrained == True:
+    if pretrained == False:
+        if image_backbone == "densenet169":
+            image_backbone = densenet169(pretrained=False)
+        if image_backbone == "densenet121":
+            image_backbone = densenet121(pretrained = False)
+
+    if pretrained == "imagenet":
         if image_backbone == "densenet169":
             image_backbone = densenet169(pretrained=True)
         if image_backbone == "densenet121":
             image_backbone = densenet121(pretrained = True)
 
-    if pretrained == False : 
+    if pretrained == "medical" : 
         if image_backbone == "densenet121":
             image_backbone = densenet121(pretrained = False)
             state_dict=torch.load(f"{DATA_DIR}RadImageNet_pytorch/densenet121.pt", map_location = device)
@@ -119,8 +121,9 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained=True, classifie
             image_backbone.load_state_dict(state_dict, strict=False)
 
     # Freeze parameters so we don't backprop through them
-    for param in image_backbone.parameters():
-        param.requires_grad = False
+    if pretrained in ["imagenet", "medical"]:
+        for param in image_backbone.parameters():
+            param.requires_grad = False
 
     meta_backbone = MLP(1000) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
     if metadata == True : 
@@ -172,4 +175,35 @@ def get_model_onnx(classifier_class=Classifier, in_features=2000, prob=0.5):
     classifier = classifier_class(in_features, prob)
     model = CombineModel_onnx(image_backbone=image_backbone, meta_backbone = meta_backbone, classifier=classifier)
     return model
+
+class Model_6classes_onnx(nn.Module):
+    def __init__(self, prob, in_features):
+        super().__init__()
+        self.base_model = Densenet169_onnx()
+        self.avgpool = nn.AdaptiveAvgPool2d(1)
+        self.dropout = nn.Dropout(p=prob)
+        self.linear = nn.Linear(in_features, 6)
+    def forward(self, x):
+        x = self.base_model(x)
+        print("Shape base model:", x.shape)
+        x = self.linear(x)
+        return x
+    
+class DenseNet169_change_avg(nn.Module):
+    def __init__(self):
+        super(DenseNet169_change_avg, self).__init__()
+        self.densenet169 = densenet169(pretrained=True).features
+        self.avgpool = nn.AdaptiveAvgPool2d(1)  
+        self.relu = nn.ReLU()
+        self.mlp = nn.Linear(1664, 6)
+        self.sigmoid = nn.Sigmoid()   
+
+    def forward(self, x):
+        x = self.densenet169(x)      
+        x = self.relu(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.mlp(x)
+
+        return x
 
