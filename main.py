@@ -77,7 +77,7 @@ df = pd.DataFrame({
     "Predicted label": all_preds,
     "Confidence": all_probs
 })
-df.to_excel('results.xlsx', index=False)
+df.to_excel(f'{configs.DIR}results/results.xlsx', index=False)
 
 # Auc roc curve
 print("Auc-roc score : ",my_model.eval_performance(all_labels, all_probs))
