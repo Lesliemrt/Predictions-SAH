@@ -14,9 +14,9 @@ import configs
 import utils
 from dataloader import TestDataset
 
-# To make sah predictions with pretrained model on hospital_data_2
+# To make sah predictions and choose slices with pretrained model on hospital_data_2
 
-# Create an excel with identifier for each image
+# 1. Create an excel with identifier for each image
 images = []
 identifiers = []
 # Loop through each image file
@@ -57,14 +57,16 @@ print("len de invalid_paths : ",len(invalid_paths))
 predictions_df = predictions_df[predictions_df['Path'].isin(invalid_paths) == False].reset_index(drop=True)
 
 # Visualize an image with preprocessing
-# image_path = utils.ajust_path_data2(predictions_df['Identifier'][0])
-# print(image_path)
-# image = utils._read(image_path)
-# image = image.permute(1, 2, 0).cpu().numpy()
-# plt.axis('off')
-# plt.imshow(image)
-# plt.savefig(f"{configs.DIR}/results/visualize new data test.png") 
-# plt.close()
+for k in range(20):
+    image_path = utils.ajust_path_data2(predictions_df['Identifier'][k])
+    print(image_path)
+    image = utils._read(image_path)
+    image = image.permute(1, 2, 0).cpu().numpy()
+    plt.axis('off')
+    plt.title(f'{iden}')
+    plt.imshow(image)
+    plt.savefig(f"{configs.DIR}/results/visualize new data test.png") 
+    plt.close()
 
 # Dataloader for predictions
 test_dataset = TestDataset(
@@ -122,5 +124,5 @@ for i, col in enumerate(hemorrhage_types):
 
 print("predictions_df")
 print(predictions_df)
-predictions_df.to_excel('predictions_new_data.xlsx', index=False)
+predictions_df.to_excel('excel_new_data_prepared.xlsx', sheet_name = 'predictions', index=False)
 
