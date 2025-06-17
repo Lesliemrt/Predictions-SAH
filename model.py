@@ -5,6 +5,7 @@ import onnxruntime as rt
 from configs import DATA_DIR, DIR
 import configs
 import utils
+from keras_to_pytorch.densenet_from_IR import KitModel
 
 class Classifier(nn.Module):
     def __init__(self, in_features, prob):
@@ -12,7 +13,6 @@ class Classifier(nn.Module):
         self.gap = nn.AdaptiveAvgPool2d(1)
         self.dropout = nn.Dropout(p=prob)
         self.output = nn.Linear(in_features, 1)
-        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         # x = self.gap(x)
@@ -115,10 +115,12 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
             print("⚠️ Clés inattendues (ignorées car pas dans le modèle) :", unexpected_keys[:10], len(unexpected_keys))     
         
         if image_backbone == "densenet169":
-            image_backbone = densenet169(pretrained = False)
-            state_dict = torch.load(f"{DATA_DIR}model_epoch_best_4.pth", map_location=device)['state_dict']
-            state_dict = utils.adapt_name(state_dict)
-            image_backbone.load_state_dict(state_dict, strict=False)
+            # image_backbone = densenet169(pretrained = False)
+            # state_dict = torch.load(f"{DATA_DIR}model_epoch_best_4.pth", map_location=device)['state_dict']
+            # state_dict = utils.adapt_name(state_dict)
+            # image_backbone.load_state_dict(state_dict, strict=False)
+            image_backbone = KitModel("/export/usuarios01/lmurat/Datos/Predictions-SAH/keras_to_pytorch/densenet_from_IR_weights.npy")
+            image_backbone.classifier = nn.Identity()
 
     # Freeze parameters so we don't backprop through them
     if pretrained in ["imagenet", "medical"]:
@@ -127,9 +129,9 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
 
     meta_backbone = MLP(1000) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
     if metadata == True : 
-        classifier = classifier(2000, prob)  # 2000 = image_output.shape + meta_output.shape
+        classifier = classifier(2664, prob)  # 2000 = image_output.shape + meta_output.shape
     else : 
-        classifier = classifier(1000, prob)
+        classifier = classifier(1664, prob)
     model = CombineModel(image_backbone, meta_backbone, classifier, metadata)
     
     return model

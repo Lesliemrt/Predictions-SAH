@@ -36,9 +36,11 @@ def window_image(dcm, window_center, window_width):
     return img
 
 def bsb_window(dcm):
+    # windowing
     brain_img = window_image(dcm, 40, 80)
     subdural_img = window_image(dcm, 80, 200)
     soft_img = window_image(dcm, 40, 380)
+    # normalization
     brain_img = (brain_img - 0) / 80
     subdural_img = (subdural_img - (-20)) / 200
     soft_img = (soft_img - (-150)) / 380

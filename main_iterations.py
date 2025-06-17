@@ -16,7 +16,7 @@ auc_values = []
 training_accuracy_values = []
 validation_accuracy_values = []
 lw = 2 #line width
-nb_iterations = 10
+nb_iterations = 20
 
 plt.figure()
 for k in range(nb_iterations):
@@ -36,8 +36,8 @@ for k in range(nb_iterations):
 
     # Load model
     from model import get_model, Classifier, Classifier_Many_Layers
-    model = get_model(prob=0.5, image_backbone="densenet169", pretrained = "imagenet", classifier=Classifier, metadata=True) #prob = prob for dropout
-    my_model=Model_extented(model, epochs=5, lr=1e-3)
+    model = get_model(prob=0.5, image_backbone="densenet169", pretrained = "medical", classifier=Classifier, metadata=True) #prob = prob for dropout
+    my_model=Model_extented(model, epochs=4, lr=1e-3)
 
     # Training
     my_model.trainloop(trainloader, validloader, testloader)
