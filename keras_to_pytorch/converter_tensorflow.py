@@ -1,13 +1,20 @@
 # To use with environment with tensorflow keras
 import numpy as np
+import sys
 
-from tensorflow.keras.models import Model
-from tensorflow.keras.applications import DenseNet169
-from tensorflow.keras.layers import GlobalAveragePooling2D, Dropout, Dense
-from tensorflow.keras import backend as K
+# from tensorflow.keras.models import Model
+# from tensorflow.keras.applications import DenseNet169
+# from tensorflow.keras.layers import GlobalAveragePooling2D, Dropout, Dense
+# from tensorflow.keras import backend as K
+# pip install keras==2.2.4
+import keras
+from keras.models import Model
+from keras.applications import DenseNet169
+from keras.layers import GlobalAveragePooling2D, Dropout, Dense
+from keras import backend as K
 
-from mmdnn.conversion._script.convertToIR import convertToIR
-
+# from mmdnn.conversion._script.convertToIR import convertToIR
+from mmdnn.conversion._script.convertToIR import _main as convertToIR_main
 
 # 1. Create keras model and load weights
 HEIGHT, WIDTH, CHANNELS = 256, 256, 3
@@ -24,8 +31,11 @@ def create_model():
     return Model(inputs = base_model.input, outputs = y_pred)
 
 keras_model = create_model()
-weights_path = f'/export/usuarios01/lmurat/Datos/Predictions-SAH/keras_to_pytorch/densenet169_model.h5'
-keras_model.load_weights(weights_path)   
+weights_path = f'/export/usuarios01/lmurat/Datos/Predictions-SAH/keras_to_pytorch/densenet169_weights.h5'
+keras_model.load_weights(weights_path)  
+
+with open('densenet169.json', 'w') as f:
+    f.write(keras_model.to_json())
 
 # # 2.1 Saving keras model weights layer per layer
 # keras_weights = {}
@@ -36,13 +46,27 @@ keras_model.load_weights(weights_path)
 # path = '/export/usuarios01/lmurat/Datos/Predictions-SAH/keras_to_pytorch/keras_weights.npy'
 # np.save(path, keras_weights)
 
-# 2.2 Oteher method : Saving keras model using mmdnn
-keras_model.save('/export/usuarios01/lmurat/Datos/Predictions-SAH/keras_to_pytorch/densenet169_fullmodel.h5')
-model_path = '/export/usuarios01/lmurat/Datos/Predictions-SAH/keras_to_pytorch/densenet169_fullmodel.h5'
+# 2.2 Oteher method : Saving keras model using mmdnn (env_keras)
+keras_model.save('/export/usuarios01/lmurat/Datos/Predictions-SAH/keras_to_pytorch/densenet169_fullmodel.h5') # save weights+structure (not useful)
+
+model_path = '/export/usuarios01/lmurat/Datos/Predictions-SAH/keras_to_pytorch/densenet169.json'
+weights_path = '/export/usuarios01/lmurat/Datos/Predictions-SAH/keras_to_pytorch/densenet169_weights.h5'
 destination_name = 'densenet169_IR'
 
-convertToIR._main([
-    '-f', 'keras', # framework source
-    '-d', destination_name, # destination name
-    '-n', model_path # .h5 file (structure + weights)
-])
+
+# Prépare les arguments comme en ligne de commande
+sys.argv = [
+    'convertToIR',                # Nom fictif du script
+    '-f', 'keras',                # Framework source
+    '-d', destination_name,       # destination name
+    '-n', model_path,              # .h5 file (structure + weights)
+    '-w', weights_path
+]
+
+# Appelle la fonction principale du convertisseur
+convertToIR_main()
+
+# to do next in mmdnn2torch: 
+# mmtocode -f pytorch -n densenet169_IR.pb -w densenet169_IR.npy -d densenet_from_IR -ow densenet_from_IR_weights.npy
+
+
