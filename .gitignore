@@ -20,6 +20,12 @@ results/
 *.xlsx#
 *.pth
 RadImageNet_pytorch/
+converter_pytorch.py
+densenet169_IR.npy
+densenet169_IR.pb
+keras_weights.npy
+npy2pth.py
+
 
 #tests for datapreprocessing
 test_prepare_data.py
