@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torchvision.models import resnet50, densenet121, densenet169
+from torch.nn import functional as F
 import onnxruntime as rt
 from configs import DATA_DIR, DIR
 import configs
@@ -221,3 +222,58 @@ class Model_6_classes(nn.Module):
         x = self.dropout(x)
         x = self.linear(x)
         return x
+    
+
+
+# Other mdoel (from from https://github.com/okotaku/kaggle_rsna2019_3rd_solution)
+from pretrainedmodels import se_resnext50_32x4d
+encoders = {
+    "se_resnext50_32x4d": {
+        "encoder": se_resnext50_32x4d,
+        "out_shape": 2048
+    },
+}
+
+class Flatten(nn.Module):
+    def forward(self, input):
+        return input.view(input.size(0), -1)
+
+class SEBlock(nn.Module):
+    def __init__(self, in_ch, r=8):
+        super(SEBlock, self).__init__()
+
+        self.linear_1 = nn.Linear(in_ch, in_ch//r)
+        self.linear_2 = nn.Linear(in_ch//r, in_ch)
+
+    def forward(self, x):
+        input_x = x
+
+        x = F.relu(self.linear_1(x), inplace=True)
+        x = self.linear_2(x)
+        x = F.sigmoid(x)
+
+        x = input_x * x
+
+        return x
+
+class CnnModel(nn.Module):
+    def __init__(self, num_classes, encoder="se_resnext50_32x4d", pretrained="imagenet"):
+        super().__init__()
+        self.net = encoders[encoder]["encoder"](pretrained=pretrained)
+
+        self.net.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
+        out_shape = encoders[encoder]["out_shape"]
+
+        self.net.last_linear = nn.Sequential(
+            Flatten(),
+            SEBlock(out_shape),
+            nn.Dropout(),
+            nn.Linear(out_shape, num_classes)
+        )
+
+
+    def fresh_params(self):
+        return self.net.last_linear.parameters()
+
+    def forward(self, x):
+        return self.net(x)

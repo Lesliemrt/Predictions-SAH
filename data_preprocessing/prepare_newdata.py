@@ -9,7 +9,8 @@ import torch
 from torch import nn
 from torchvision.models import densenet169
 from torch.utils.data import DataLoader
-
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import configs
 import utils
 from dataloader import TestDataset
@@ -30,7 +31,6 @@ for patient in all_patients:
         if file in all_id1 :
             all_id1.remove(file)
     id1 = all_id1[0]
-    print(id1)
     all_id2 = os.listdir(f"{configs.DATA_DIR}hospital_data_2/{patient}/{id1}")
     for id2 in all_id2:
         all_id3 = os.listdir(f"{configs.DATA_DIR}hospital_data_2/{patient}/{id1}/{id2}")
@@ -46,7 +46,7 @@ predictions_df = pd.DataFrame()
 predictions_df["Identifier"] = identifiers
 predictions_df["Path"] = predictions_df["Identifier"].apply(utils.ajust_path_data2)
 
-#remove image none
+# 2. Remove image == none
 invalid_paths = []
 for i in range(len(predictions_df)):
     path = predictions_df['Path'].iloc[i]
@@ -56,19 +56,19 @@ for i in range(len(predictions_df)):
 print("len de invalid_paths : ",len(invalid_paths))
 predictions_df = predictions_df[predictions_df['Path'].isin(invalid_paths) == False].reset_index(drop=True)
 
-# Visualize an image with preprocessing
-for k in range(20):
-    image_path = utils.ajust_path_data2(predictions_df['Identifier'][k])
-    print(image_path)
-    image = utils._read(image_path)
-    image = image.permute(1, 2, 0).cpu().numpy()
-    plt.axis('off')
-    plt.title(f'{iden}')
-    plt.imshow(image)
-    plt.savefig(f"{configs.DIR}/results/visualize new data test.png") 
-    plt.close()
+# # Visualize an image with preprocessing
+# for k in range(20):
+#     image_path = utils.ajust_path_data2(predictions_df['Identifier'][k])
+#     print(image_path)
+#     image = utils._read(image_path)
+#     image = image.permute(1, 2, 0).cpu().numpy()
+#     plt.axis('off')
+#     plt.title(f'{predictions_df['Identifier'][k]}')
+#     plt.imshow(image)
+#     plt.savefig(f"{configs.DIR}/results/visualize new data test {k}.png") 
+#     plt.close()
 
-# Dataloader for predictions
+# 3. Dataloader for preprocessing
 test_dataset = TestDataset(
     dataset=predictions_df,
     batch_size=configs.TEST_BATCH_SIZE,
@@ -76,34 +76,13 @@ test_dataset = TestDataset(
 
 testloader = DataLoader(test_dataset, batch_size=configs.TEST_BATCH_SIZE, shuffle=False, collate_fn=utils.collate_remove_none)
 
-# Definition of the model for predictions
-class DenseNet169_change_avg(nn.Module):
-    def __init__(self):
-        super(DenseNet169_change_avg, self).__init__()
-        self.densenet169 = densenet169(pretrained=True).features
-        self.avgpool = nn.AdaptiveAvgPool2d(1)  
-        self.relu = nn.ReLU()
-        self.mlp = nn.Linear(1664, 6)
-        self.sigmoid = nn.Sigmoid()   
+# 4. Load model + weights
+# Model transfered from .h5 to pytorch
+from keras_to_pytorch.densenet_from_IR import KitModel
+my_model = KitModel("/export/usuarios01/lmurat/Datos/Predictions-SAH/keras_to_pytorch/densenet_from_IR_weights.npy")
 
-    def forward(self, x):
-        x = self.densenet169(x)      
-        x = self.relu(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = self.mlp(x)
-
-        return x
-
-# Load model + weights
-# Model 1
-my_model = DenseNet169_change_avg()
-state_dict = torch.load(f"{configs.DATA_DIR}model_epoch_best_4.pth", map_location=configs.device)['state_dict']
-state_dict = utils.adapt_name(state_dict)
-my_model.load_state_dict(state_dict, strict=False)
-
-
-# Predicts
+# 5. Predicts
+print("debut predict ...........................")
 my_model.to(configs.device)
 my_model.eval()
 
@@ -124,5 +103,5 @@ for i, col in enumerate(hemorrhage_types):
 
 print("predictions_df")
 print(predictions_df)
-predictions_df.to_excel('excel_new_data_prepared.xlsx', sheet_name = 'predictions', index=False)
+predictions_df.to_excel('/export/usuarios01/lmurat/Datos/Predictions-SAH/data_preprocessing/excel_new_data_prepared.xlsx', sheet_name = 'predictions', index=False)
 
