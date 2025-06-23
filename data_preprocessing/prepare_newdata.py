@@ -103,5 +103,5 @@ for i, col in enumerate(hemorrhage_types):
 
 print("predictions_df")
 print(predictions_df)
-predictions_df.to_excel('/export/usuarios01/lmurat/Datos/Predictions-SAH/data_preprocessing/excel_new_data_prepared.xlsx', sheet_name = 'predictions', index=False)
+predictions_df.to_excel('/export/usuarios01/lmurat/Datos/Predictions-SAH/data_preprocessing/excel_new_data_prepared.xlsx', sheet_name = 'identifiers', index=False)
 

@@ -9,7 +9,7 @@ import configs
 
 # 1. Take the excel with identifier for each images and probability of hemorrage
 excel_path = '/export/usuarios01/lmurat/Datos/Predictions-SAH/data_preprocessing/excel_new_data_prepared.xlsx'
-df = pd.read_excel(excel_path)
+df = pd.read_excel(excel_path, sheet_name = "predictions")
 
 # 2. Add a column with patient ID (HSA 1, HSA 2, ...)
 df['Patient ID'] = df['Identifier'].apply(lambda x: x.split('-')[0])
@@ -33,13 +33,14 @@ def extract_dicom_info(dcm_path):
     try:
         dcm = pydicom.dcmread(dcm_path, stop_before_pixels=True)
         patient_id = dcm.PatientID
+        sop_uid = dcm.SOPInstanceUID
         series_uid = dcm.SeriesInstanceUID
         ipp2 = float(dcm.ImagePositionPatient[2])  # Z-axis position
-        return pd.Series([patient_id, series_uid, ipp2])
+        return pd.Series([patient_id, sop_uid, series_uid, ipp2])
     except Exception as e:
         print(f"Erreur lecture {dcm_path}: {e}")
-        return pd.Series([None, None, None])
-df_new_data_prepared[["PatientID", "SeriesInstanceUID", "ImagePositionPatient2"]] = df_new_data_prepared["Path"].apply(extract_dicom_info)
+        return pd.Series([None, None, None, None])
+df_new_data_prepared[["PatientID", "SOPInstanceUID", "SeriesInstanceUID", "ImagePositionPatient2"]] = df_new_data_prepared["Path"].apply(extract_dicom_info)
 df_new_data_prepared = df_new_data_prepared.sort_values(["PatientID", "SeriesInstanceUID", "ImagePositionPatient2"]).reset_index(drop=True)
 df_new_data_prepared["pre1_SOPInstanceUID"] = df_new_data_prepared.groupby(["PatientID", "SeriesInstanceUID"])["SOPInstanceUID"].shift(1)
 df_new_data_prepared["post1_SOPInstanceUID"] = df_new_data_prepared.groupby(["PatientID", "SeriesInstanceUID"])["SOPInstanceUID"].shift(-1)

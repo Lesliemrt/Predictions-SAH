@@ -259,7 +259,6 @@ class RSNADatasetTest(Dataset):
     def __init__(self,
                  df,
                  img_size,
-                 image_path,
                  crop_rate = 1.0,
                  id_colname="Image",
                  img_type=".dcm",
@@ -302,24 +301,41 @@ class RSNADatasetTest(Dataset):
         cur_idx_row = self.df.iloc[idx]
         img_id = cur_idx_row[self.id_colname]
         if self.pick_type == "pre_post":
-            img_id_pre = cur_idx_row[["pre1_SOPInstanceUID"]].fillna(img_id).values[0]
-            img_id_post = cur_idx_row[["post1_SOPInstanceUID"]].fillna(img_id).values[0]
-        elif self.pick_type == "pre_pre":
-            img_id_pre = cur_idx_row[["pre1_SOPInstanceUID"]].fillna(img_id).values[0]
-            img_id_post = cur_idx_row[["pre2_SOPInstanceUID"]].fillna(img_id_pre).values[0]
-        elif self.pick_type == "post_post":
-            img_id_pre = cur_idx_row[["post1_SOPInstanceUID"]].fillna(img_id).values[0]
-            img_id_post = cur_idx_row[["post2_SOPInstanceUID"]].fillna(img_id_pre).values[0]
+            img_id_pre = cur_idx_row.get("pre1_SOPInstanceUID")
+            if pd.isna(img_id_pre):
+                img_id_pre = img_id
+            img_id_post = cur_idx_row.get("post1_SOPInstanceUID")
+            if pd.isna(img_id_post):
+                img_id_post = img_id
+        # elif self.pick_type == "pre_pre":
+        #     img_id_pre = cur_idx_row[["pre1_SOPInstanceUID"]].fillna(value=img_id).values[0]
+        #     img_id_post = cur_idx_row[["pre2_SOPInstanceUID"]].fillna(value=img_id_pre).values[0]
+        # elif self.pick_type == "post_post":
+        #     img_id_pre = cur_idx_row[["post1_SOPInstanceUID"]].fillna(value=img_id).values[0]
+        #     img_id_post = cur_idx_row[["post2_SOPInstanceUID"]].fillna(value=img_id_pre).values[0]
         if self.user_window == 1:
-            img = self._get_img(idx, 1)
+            img = self._get_img(img_id, 1)
             img_pre = self._get_img(img_id_pre, 2)
             img_post = self._get_img(img_id_post, 3)
-        elif self.user_window == 2:
-            img_id_prepre = cur_idx_row[["pre2_SOPInstanceUID"]].fillna(img_id_pre).values[0]
-            img_id_postpost = cur_idx_row[["post2_SOPInstanceUID"]].fillna(img_id_post).values[0]
-            img = self._get_img(img_id, 1)
-            img_pre = self._get_img(img_id_prepre, 2)
-            img_post = self._get_img(img_id_postpost, 3)
+        # elif self.user_window == 2:
+        #     img_id_prepre = cur_idx_row[["pre2_SOPInstanceUID"]].fillna(img_id_pre).values[0]
+        #     img_id_postpost = cur_idx_row[["post2_SOPInstanceUID"]].fillna(img_id_post).values[0]
+        #     img = self._get_img(img_id, 1)
+        #     img_pre = self._get_img(img_id_prepre, 2)
+        #     img_post = self._get_img(img_id_postpost, 3)
+
+        if img is None:
+            print(f"[ERROR] Invalid image shape at idx={idx} for img")
+            if img_pre is not None:
+                print("shape img_pre : ",img_pre.shape)
+                dummy_shape = img_pre.shape
+            else:
+                dummy_shape = (512, 512, 1)
+            dummy_img = np.zeros(dummy_shape, dtype=np.float32)
+            img = np.concatenate([dummy_img, dummy_img, dummy_img], axis=2)
+            return img
+
+
 
         img = np.concatenate([img, img_pre, img_post], axis=2)
 
@@ -353,8 +369,13 @@ class RSNADatasetTest(Dataset):
     def _get_img(self, img_id, n):
         # img_path = os.path.join(self.image_path, img_id + self.img_type)
         row = self.df[self.df[self.id_colname] == img_id]
+        if row.empty:
+            # Ignorer cette image si elle n'existe pas dans le DataFrame
+            print(f"[WARNING] Image ID '{img_id}' introuvable dans la DataFrame. Ignorée.")
+            return None  # ou retourner une image vide (ex: np.zeros(...))
+
         img_path = row["Path"].values[0]
-        dataset = pydicom.read_file(img_path)
+        dataset = pydicom.dcmread(img_path)
         image = dataset.pixel_array
 
         if image.shape[0] != 512:
@@ -437,6 +458,7 @@ def get_windowing(data):
 
 
 def rescale_image(img, intercept, slope):
+    img = img.astype(np.float32)
     img = (img * slope + intercept)
 
     return img
