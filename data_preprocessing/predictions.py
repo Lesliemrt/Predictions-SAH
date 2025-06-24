@@ -11,6 +11,7 @@ import torch
 from torch import nn
 from torchvision.models import densenet169
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import configs
@@ -21,6 +22,10 @@ from model import DenseNet169_change_avg, Model_6_classes, CnnModel
 # 1. Take the excel with identifier for each images
 excel_path = '/export/usuarios01/lmurat/Datos/Predictions-SAH/data_preprocessing/test_predictions.xlsx'
 predictions_df = pd.read_excel(excel_path, sheet_name = "identifiers")
+
+print("torch.cuda.is_available()", torch.cuda.is_available())  # Doit retourner True si un GPU est détecté
+print("torch.cuda.device_count()", torch.cuda.device_count())  # Nombre de GPUs disponibles
+print("torch.cuda.get_device_name(0)", torch.cuda.get_device_name(0))  # Nom du GPU (si disponible)
 
 
 # # -----------------------------------------Test 1 -----------------------------------------------
@@ -82,8 +87,8 @@ del test_dataset
 model_path = "/export/usuarios01/lmurat/Datos/Predictions-SAH/Data/exp16_seres_ep5.pth"
 model = CnnModel(num_classes=6, encoder="se_resnext50_32x4d", pretrained="imagenet")
 model.load_state_dict(torch.load(model_path,  map_location=configs.device))
-model = torch.nn.DataParallel(model, device_ids=[configs.device.index])
 model.to(configs.device)
+model = torch.nn.DataParallel(model, device_ids=[1])
 
 # 4. Predictions
 print("debut predict ...................")
@@ -92,12 +97,14 @@ def predict(model, test_loader, device, n_tta=1, flip_aug=False):
     model.eval()
     preds_cat = []
     with torch.no_grad():
-        for step, imgs in enumerate(test_loader):
+        for step, imgs in tqdm(enumerate(test_loader), total=len(test_loader), desc="Predicting"):
             features = imgs[0].to(device)
+            print(f"Batch {step} size: {features.shape[0]}, img size : {features.shape[2:] }")
             logits = model(features)
 
             if n_tta >= 2:
                 flip_img = imgs[1].to(device)
+                # print(f"flip : Batch {step} size: {flip_img.shape[0]}, img size : {flip_img.shape[2:] }")
                 logits += model(flip_img)
 
             logits = logits / n_tta

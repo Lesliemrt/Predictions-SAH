@@ -14,6 +14,7 @@ VALID_BATCH_SIZE = 32
 TEST_BATCH_SIZE = 32
 
 patient = 9 #index of {patiente} in the path (hospital_data_1)
+patient_data2 = 8
 
 # Folders
 DATA_DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/Data/'

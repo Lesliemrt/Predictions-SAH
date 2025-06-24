@@ -130,7 +130,7 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
 
     meta_backbone = MLP(1000) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
     if metadata == True : 
-        classifier = classifier(2664, prob)  # 2000 = image_output.shape + meta_output.shape
+        classifier = classifier(2000, prob)  # 2000 = image_output.shape + meta_output.shape
     else : 
         classifier = classifier(1664, prob)
     model = CombineModel(image_backbone, meta_backbone, classifier, metadata)

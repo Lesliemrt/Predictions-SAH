@@ -5,7 +5,7 @@ import os
 import pandas as pd
 import numpy as np
 import pydicom
-from albumentations import *
+from albumentations import Compose, Resize
 import cv2
 # from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 from sklearn.model_selection import train_test_split
@@ -117,8 +117,8 @@ class TestDataset(Dataset):
         return {'image':image, 'label':label}
 
 
-"""TRAINING VALID AND TEST DATASET"""
-# Read the excel with new label
+"""TRAINING VALID AND TEST DATASET   (hospital_data_1)"""
+# Read the excel with label
 new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='selected_cortes')
 new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
 
@@ -157,7 +157,7 @@ patient_df["HSA"] = patient_df["Path"].apply(lambda x: x.split('/')[patiente])
 patient_df = patient_df.groupby("HSA")["ANY_Vasospasm"].max().reset_index()  # patient's label = 1 if at least one image is positive
 
 
-"""DATA FRAME META DATA"""
+"""DATA FRAME META DATA  (hospital_data_1)"""
 metadata_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
 metadata_df = metadata_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'HuntHess', 'WFNS']]
 metadata_df = metadata_df.rename(columns={'Edad':'Age','Sexo':'Sex'})
@@ -166,6 +166,41 @@ metadata_df = metadata_df[:197] # Delete the last lines of the excel that contai
 # Add metadata to data_df
 data_df['HSA'] = data_df['Path'].apply(lambda x: x.split('/')[patiente])
 data_df = pd.merge(data_df, metadata_df, on='HSA', how='left')
+
+
+# for later to test on new data : 
+# """TRAINING VALID AND TEST DATASET   (hospital_data_2)"""
+# # Read the excel with label
+# new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='selected_cortes')
+# new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path_data2)
+
+# # Create the DataFrame for the dataset
+# data2_df = new_label_df[['ANY Vasoespasm ','Path']]
+# data2_df = data2_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
+
+# # Remove unexistant file/ path from data_df : 
+# data2_df = data2_df[data2_df['Path'].apply(os.path.exists)]
+
+# # Stratified split in patients 
+# patient_data2 = configs.patient_data2 #index of {patiente} in the path
+# # patient_df = data_df.copy()
+# # patient_df["HSA"] = patient_df["Path"].apply(lambda x: x.split('/')[patiente])
+# # patient_df = patient_df.groupby("HSA")["ANY_Vasospasm"].max().reset_index()  # patient's label = 1 if at least one image is positive
+
+
+# """DATA FRAME META DATA  (hospital_data_2)"""
+# metadata2_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='datos hospital')
+# metadata2_df = metadata2_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'HuntHess', 'WFNS']]
+# metadata2_df = metadata2_df.rename(columns={'Edad':'Age','Sexo':'Sex'})
+# metadata2_df = metadata2_df[:197] # Delete the last lines of the excel that contains totals
+
+# # Add metadata to data_df
+# data2_df['HSA'] = data2_df['Path'].apply(lambda x: x.split('/')[patiente])
+# data2_df = pd.merge(data2_df, metadata2_df, on='HSA', how='left')
+
+
+
+
 
 # Everything inside create_dataloader to be able to change the seed with main_40_iterations
 def create_dataloader():
@@ -189,6 +224,9 @@ def create_dataloader():
     train_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in train_patients["HSA"].values)]
     valid_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in valid_patients["HSA"].values)]
     test_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in test_patients["HSA"].values)]
+
+    # for later to test on new data : 
+    # test_df = data2_df[data2_df['Path'].apply(lambda x: x.split('/')[patient_data2] in data2_df["HSA"].values)]
 
     # Oversampling for class 1 (~ 28% of 1) only for training !!
 
@@ -298,6 +336,7 @@ class RSNADatasetTest(Dataset):
         return self.df.shape[0]
 
     def __getitem__(self, idx):
+        print(f"Getting item at index: {idx}")
         cur_idx_row = self.df.iloc[idx]
         img_id = cur_idx_row[self.id_colname]
         if self.pick_type == "pre_post":
@@ -326,16 +365,19 @@ class RSNADatasetTest(Dataset):
 
         if img is None:
             print(f"[ERROR] Invalid image shape at idx={idx} for img")
-            if img_pre is not None:
-                print("shape img_pre : ",img_pre.shape)
-                dummy_shape = img_pre.shape
-            else:
-                dummy_shape = (512, 512, 1)
-            dummy_img = np.zeros(dummy_shape, dtype=np.float32)
-            img = np.concatenate([dummy_img, dummy_img, dummy_img], axis=2)
-            return img
+            dummy_shape = (512, 512, 1)
+            img = np.zeros(dummy_shape, dtype=np.float32)
+        if img_pre is None:
+            print(f"[ERROR] Invalid pre image shape at idx={idx} for img")
+            dummy_shape = (512, 512, 1)
+            img_pre = np.zeros(dummy_shape, dtype=np.float32)
+        if img_post is None:
+            print(f"[ERROR] Invalid post image shape at idx={idx} for img")
+            dummy_shape = (512, 512, 1)
+            img_post = np.zeros(dummy_shape, dtype=np.float32)
+        
 
-
+        print(f"img shape : {img.shape}, pre : {img_pre.shape}, post : {img_post.shape} ")
 
         img = np.concatenate([img, img_pre, img_post], axis=2)
 
@@ -363,6 +405,13 @@ class RSNADatasetTest(Dataset):
             imgs.append(torch.FloatTensor(img_tta))
             flip_img_tta = img_tta[:, :, ::-1].copy()
             imgs.append(torch.FloatTensor(flip_img_tta))
+        
+        if imgs[0].shape != (3, 512, 512):
+            print(f"⚠️ Bad shape at index {idx}: {imgs[0].shape}")
+            raise ValueError(f"Invalid image shape: {img[0].shape}")
+        if imgs[1].shape != (3, 512, 512):
+            print(f"⚠️ Bad shape (flip img) at index {idx}: {img[1].shape}")
+            raise ValueError(f"Invalid flip image shape: {img[1].shape}")
 
         return imgs
 
@@ -378,8 +427,10 @@ class RSNADatasetTest(Dataset):
         dataset = pydicom.dcmread(img_path)
         image = dataset.pixel_array
 
-        if image.shape[0] != 512:
+        if image.shape[0] != 512 or image.shape[1] != 512:
             image = cv2.resize(image, (512, 512))
+
+
 
         if self.black_crop:
             try:
