@@ -122,6 +122,8 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
             # image_backbone.load_state_dict(state_dict, strict=False)
             image_backbone = KitModel("/export/usuarios01/lmurat/Datos/Predictions-SAH/keras_to_pytorch/densenet_from_IR_weights.npy")
             image_backbone.classifier = nn.Identity()
+        
+    
 
     # Freeze parameters so we don't backprop through them
     if pretrained in ["imagenet", "medical"]:
@@ -257,23 +259,36 @@ class SEBlock(nn.Module):
         return x
 
 class CnnModel(nn.Module):
-    def __init__(self, num_classes, encoder="se_resnext50_32x4d", pretrained="imagenet"):
+    def __init__(self, num_classes, encoder="se_resnext50_32x4d", pretrained="imagenet", features_only = False):
         super().__init__()
         self.net = encoders[encoder]["encoder"](pretrained=pretrained)
-
+        self.features_only = features_only
         self.net.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         out_shape = encoders[encoder]["out_shape"]
 
-        self.net.last_linear = nn.Sequential(
-            Flatten(),
-            SEBlock(out_shape),
-            nn.Dropout(),
-            nn.Linear(out_shape, num_classes)
-        )
+        if not self.features_only:
+            self.net.last_linear = nn.Sequential(
+                Flatten(),
+                SEBlock(out_shape),
+                nn.Dropout(),
+                nn.Linear(out_shape, num_classes)
+            )
 
 
     def fresh_params(self):
-        return self.net.last_linear.parameters()
+        if not self.features_only:
+            return self.net.last_linear.parameters()
+        return []
+
+    # def forward(self, x):
+    #     return self.net(x)
 
     def forward(self, x):
-        return self.net(x)
+        x = self.net.features(x)
+        x = self.net.avg_pool(x)
+        x = x.view(x.size(0), -1)
+
+        if self.features_only:
+            return x
+        else:
+            return self.net.last_linear(x)
