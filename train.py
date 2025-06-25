@@ -55,6 +55,7 @@ class Model_extented(nn.Module):
                 self.optim.zero_grad()
                 outputs = self.forward(image=inputs, meta=meta)
                 labels = labels.unsqueeze(1)
+                print(f"output shape : {outputs.shape}, labels shape : {labels.shape}")
                 loss = self.loss_function(outputs, labels)
                 loss.backward()
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
