@@ -192,3 +192,9 @@ def extract_dicom_info(dcm_path):
     except Exception as e:
         print(f"Erreur lecture {dcm_path}: {e}")
         return pd.Series([None, None, None, None])
+
+def denormalize(img, means, stds):
+    img = img.clone()
+    for c in range(3):
+        img[c] = img[c] * stds[c] + means[c]
+    return img

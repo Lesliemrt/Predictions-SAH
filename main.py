@@ -21,9 +21,8 @@ torch.backends.cudnn.benchmark = False
 # Load data
 trainloader, validloader, testloader = dataloader.create_dataloader()
 
-print("torch.cuda.is_available()", torch.cuda.is_available())  # Doit retourner True si un GPU est détecté
-print("torch.cuda.device_count()", torch.cuda.device_count())  # Nombre de GPUs disponibles
-print("torch.cuda.get_device_name(0)", torch.cuda.get_device_name(0))  # Nom du GPU (si disponible)
+print("torch.cuda.is_available()", torch.cuda.is_available()) 
+print("torch.cuda.get_device_name(0)", torch.cuda.get_device_name(0))
 
 # Load model
 # prob = prob for dropout
@@ -32,7 +31,7 @@ print("torch.cuda.get_device_name(0)", torch.cuda.get_device_name(0))  # Nom du 
 # classifier = model.Classifier or model.Classifier_Many_Layers
 model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier, metadata = True)
 # model = get_model_onnx(classifier_class=Classifier, in_features=2664, prob=0.5)
-my_model=Model_extented(model, epochs=10, lr=1e-3)
+my_model=Model_extented(model, epochs=5, lr=1e-3)
 
 # Training
 my_model.trainloop(trainloader, validloader, testloader)

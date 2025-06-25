@@ -210,7 +210,9 @@ class Model_extented(nn.Module):
                 # Visualization
                 plt.figure(figsize=(10, 5))
                 plt.subplot(1, 2, 1)
-                img_np = input_img.detach().cpu().squeeze().permute(1, 2, 0).numpy()
+                # img = utils.denormalize(input_img, means=[0.485, 0.456, 0.406], stds=[0.229, 0.224, 0.225])
+                img = torch.clamp(input_img, 0, 1)
+                img_np = img.detach().cpu().squeeze().permute(1, 2, 0).numpy()
                 plt.imshow(img_np, cmap='gray' if img_np.shape[2] == 1 else None)
                 plt.title(f"Original Image (label = {labels[index]})")
                 plt.axis("off")
