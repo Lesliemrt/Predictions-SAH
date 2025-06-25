@@ -123,7 +123,13 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
             image_backbone = KitModel("/export/usuarios01/lmurat/Datos/Predictions-SAH/keras_to_pytorch/densenet_from_IR_weights.npy")
             image_backbone.classifier = nn.Identity()
         
-    
+        if image_backbone == "se_resnext50_32x4d":
+            model_path = "/export/usuarios01/lmurat/Datos/Predictions-SAH/Data/exp16_seres_ep5.pth"
+            image_backbone = CnnModel(num_classes=6, encoder="se_resnext50_32x4d", pretrained="imagenet", features_only=True)
+            image_backbone.load_state_dict(torch.load(model_path,  map_location=device), strict=False)
+            image_backbone.to(device)
+            image_backbone = torch.nn.DataParallel(image_backbone, device_ids=[1])
+            image_in_features = 2048
 
     # Freeze parameters so we don't backprop through them
     if pretrained in ["imagenet", "medical"]:
@@ -132,9 +138,9 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
 
     meta_backbone = MLP(1000) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
     if metadata == True : 
-        classifier = classifier(2000, prob)  # 2000 = image_output.shape + meta_output.shape
+        classifier = classifier(3048, prob)  # 2000 = image_output.shape + meta_output.shape
     else : 
-        classifier = classifier(1664, prob)
+        classifier = classifier(2048, prob)
     model = CombineModel(image_backbone, meta_backbone, classifier, metadata)
     
     return model
