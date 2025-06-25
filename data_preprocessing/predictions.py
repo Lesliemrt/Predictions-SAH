@@ -99,7 +99,6 @@ def predict(model, test_loader, device, n_tta=1, flip_aug=False):
     with torch.no_grad():
         for step, imgs in tqdm(enumerate(test_loader), total=len(test_loader), desc="Predicting"):
             features = imgs[0].to(device)
-            print(f"Batch {step} size: {features.shape[0]}, img size : {features.shape[2:] }")
             logits = model(features)
 
             if n_tta >= 2:

@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 from torchvision import transforms
+import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
@@ -178,3 +179,16 @@ def _read_new(img_path):
 
     img = torch.stack(channels)  # Shape: [3, H, W]
     return img
+
+# to extract ["PatientID", "SOPInstanceUID", "SeriesInstanceUID", "ImagePositionPatient2"]
+def extract_dicom_info(dcm_path):
+    try:
+        dcm = pydicom.dcmread(dcm_path, stop_before_pixels=True)
+        patient_id = dcm.PatientID
+        sop_uid = dcm.SOPInstanceUID
+        series_uid = dcm.SeriesInstanceUID
+        ipp2 = float(dcm.ImagePositionPatient[2])  # Z-axis position
+        return pd.Series([patient_id, sop_uid, series_uid, ipp2])
+    except Exception as e:
+        print(f"Erreur lecture {dcm_path}: {e}")
+        return pd.Series([None, None, None, None])

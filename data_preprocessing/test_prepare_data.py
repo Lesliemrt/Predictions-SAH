@@ -59,22 +59,12 @@ predictions_df = predictions_df[predictions_df['Path'].isin(invalid_paths) == Fa
 # plt.close()
 
 # 4. Add dicom informations to order the slices
-def extract_dicom_info(dcm_path):
-    try:
-        dcm = pydicom.dcmread(dcm_path, stop_before_pixels=True)
-        patient_id = dcm.PatientID
-        sop_uid = dcm.SOPInstanceUID
-        series_uid = dcm.SeriesInstanceUID
-        ipp2 = float(dcm.ImagePositionPatient[2])  # Z-axis position
-        return pd.Series([patient_id, sop_uid, series_uid, ipp2])
-    except Exception as e:
-        print(f"Erreur lecture {dcm_path}: {e}")
-        return pd.Series([None, None, None, None])
-predictions_df[["PatientID", "SOPInstanceUID", "SeriesInstanceUID", "ImagePositionPatient2"]] = predictions_df["Path"].apply(extract_dicom_info)
+predictions_df[["PatientID", "SOPInstanceUID", "SeriesInstanceUID", "ImagePositionPatient2"]] = predictions_df["Path"].apply(utils.extract_dicom_info)
 predictions_df = predictions_df.sort_values(["PatientID", "SeriesInstanceUID", "ImagePositionPatient2"]).reset_index(drop=True)
 predictions_df["pre1_SOPInstanceUID"] = predictions_df.groupby(["PatientID", "SeriesInstanceUID"])["SOPInstanceUID"].shift(1)
 predictions_df["post1_SOPInstanceUID"] = predictions_df.groupby(["PatientID", "SeriesInstanceUID"])["SOPInstanceUID"].shift(-1)
 
+# 5. Save to an excel sheet_name = identifiers
 predictions_df.to_excel('/export/usuarios01/lmurat/Datos/Predictions-SAH/data_preprocessing/test_predictions.xlsx', sheet_name="identifiers", index=False)
 
 
