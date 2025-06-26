@@ -297,15 +297,15 @@ def create_dataloader():
     # Train Dataset
     train_dataset = RSNADataset(train_df, labels = train_labels, img_size= img_size, id_colname="SOPInstanceUID",
                             transforms=test_augmentation, black_crop=False, subdural_window=True,
-                            n_tta=2)
+                            n_tta=2, augment = True)
     # Validation Dataset
     valid_dataset = RSNADataset(valid_df,  labels = valid_labels, img_size= img_size, id_colname="SOPInstanceUID",
                             transforms=test_augmentation, black_crop=False, subdural_window=True,
-                            n_tta=2)
+                            n_tta=2, augment = False)
     # Test Dataset
     test_dataset = RSNADataset(test_df, labels = test_labels, img_size= img_size, id_colname="SOPInstanceUID",
                             transforms=test_augmentation, black_crop=False, subdural_window=True,
-                            n_tta=2)
+                            n_tta=2, augment = False)
     # Create DataLoaders
     trainloader = DataLoader(train_dataset, batch_size=configs.TRAIN_BATCH_SIZE, shuffle=True, num_workers=16, pin_memory=True)
     validloader = DataLoader(valid_dataset, batch_size=configs.VALID_BATCH_SIZE, shuffle=False, num_workers=16, pin_memory=True)
@@ -339,7 +339,8 @@ class RSNADataset(Dataset):
                  n_tta=1,
                  rescaling=False,
                  user_window=1,
-                 pick_type="pre_post"
+                 pick_type="pre_post",
+                 augment=False
                  ):
         self.df = df
         self.labels = labels
@@ -362,6 +363,8 @@ class RSNADataset(Dataset):
         self.rescaling = rescaling
         self.user_window = user_window
         self.pick_type = pick_type
+        self.augment = augment
+        self.transform_augment = self.get_transforms()
 
     def __len__(self):
         return self.df.shape[0]
@@ -370,22 +373,9 @@ class RSNADataset(Dataset):
         base_transforms = []
         if self.augment:
             base_transforms += [
-                # utils.sometimes(0.50, transforms.RandomResizedCrop(size=(self.img_size[1], self.img_size[2]), scale=(0.8, 1.0))),
                 utils.sometimes(0.3, transforms.RandomAffine(degrees=0, scale=(0.8, 1.2))),  # Zoom
                 utils.sometimes(0.3, transforms.RandomRotation(degrees=30)),   # Rotation
                 utils.sometimes(0.3, transforms.ColorJitter(brightness=0.2)),  # Brightness variation (≈ Multiply)
-                # utils.sometimes(0.3, transforms.RandomErasing(scale=(0.02, 0.1))),
-                # utils.sometimes(0.3, transforms.RandomAffine(degrees=0, translate=(0.2, 0.2))) # Translation
-
-                # Other augmentations :
-                # transforms.RandomHorizontalFlip(p=0.25),
-                # transforms.RandomVerticalFlip(p=0.10),
-                # transforms.RandomAffine(degrees=0, translate=(0.2, 0.2)),  
-                # utils.sometimes(0.25, transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))),
-                # transforms.RandomCrop(size=(self.img_size[1], self.img_size[2]),  # Crop
-                #                     padding=(int(0.1 * self.img_size[1]), int(0.1 * self.img_size[2])),
-                #                     pad_if_needed=True,
-                #                     padding_mode='reflect')
             ]
         return transforms.Compose(base_transforms)
 
@@ -434,13 +424,15 @@ class RSNADataset(Dataset):
         if self.transforms is not None:
             augmented = self.transforms(image=img)
             img = augmented['image']
-        # Augmentations for trainloader (if self.augment)
-        img = self.augment(img)
 
         img = img / 255
         img -= self.means
         img /= self.stds
         img = img.transpose((2, 0, 1))
+
+        img = torch.from_numpy(img)
+        # Augmentations for trainloader (if self.augment)
+        img = self.transform_augment(img)
 
         # metadata
         age = torch.tensor([self.df['Age'].iloc[idx]], dtype=torch.float32)
