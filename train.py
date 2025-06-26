@@ -55,7 +55,6 @@ class Model_extented(nn.Module):
                 self.optim.zero_grad()
                 outputs = self.forward(image=inputs, meta=meta)
                 labels = labels.unsqueeze(1)
-                print(f"output shape : {outputs.shape}, labels shape : {labels.shape}")
                 loss = self.loss_function(outputs, labels)
                 loss.backward()
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
@@ -118,7 +117,6 @@ class Model_extented(nn.Module):
                 inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
                 outputs = self.forward(image=inputs, meta=meta)
                 probs = torch.sigmoid(outputs)
-                # print("Max prob in batch:", probs.max().item())
 
                 predicted_labels = (probs > 0.5).float() # Get predicted labels based on threshold
                 labels = labels.unsqueeze(1)
@@ -147,6 +145,7 @@ class Model_extented(nn.Module):
                 inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
                 outputs = self.forward(image=inputs, meta=meta)
                 probs = torch.sigmoid(outputs)
+                print("Max prob in batch:", probs.max().item())
 
                 all_labels.append(labels.cpu())
                 all_probs.append(probs.cpu())

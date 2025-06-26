@@ -208,7 +208,6 @@ data_df = pd.merge(data_df, metadata_df, on='HSA', how='left')
 
 # Everything inside create_dataloader to be able to change the seed with main_40_iterations
 def create_dataloader():
-    print(patient_df["ANY_Vasospasm"].value_counts())
     train_patients, val_test_patients = train_test_split(
         patient_df,
         train_size=configs.split_train,
@@ -223,6 +222,13 @@ def create_dataloader():
         stratify=val_test_patients["ANY_Vasospasm"],
         random_state=configs.SEED
     )
+
+    print("Train patient values : ")
+    print(train_patients["ANY_Vasospasm"].value_counts())
+    print("Valid patient values : ")
+    print(valid_patients["ANY_Vasospasm"].value_counts())
+    print("Test patient values : ")
+    print(test_patients["ANY_Vasospasm"].value_counts())
 
     # Create DataFrames
     train_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in train_patients["HSA"].values)]
@@ -359,6 +365,29 @@ class RSNADataset(Dataset):
 
     def __len__(self):
         return self.df.shape[0]
+    
+    def get_transforms(self):
+        base_transforms = []
+        if self.augment:
+            base_transforms += [
+                # utils.sometimes(0.50, transforms.RandomResizedCrop(size=(self.img_size[1], self.img_size[2]), scale=(0.8, 1.0))),
+                utils.sometimes(0.3, transforms.RandomAffine(degrees=0, scale=(0.8, 1.2))),  # Zoom
+                utils.sometimes(0.3, transforms.RandomRotation(degrees=30)),   # Rotation
+                utils.sometimes(0.3, transforms.ColorJitter(brightness=0.2)),  # Brightness variation (≈ Multiply)
+                # utils.sometimes(0.3, transforms.RandomErasing(scale=(0.02, 0.1))),
+                # utils.sometimes(0.3, transforms.RandomAffine(degrees=0, translate=(0.2, 0.2))) # Translation
+
+                # Other augmentations :
+                # transforms.RandomHorizontalFlip(p=0.25),
+                # transforms.RandomVerticalFlip(p=0.10),
+                # transforms.RandomAffine(degrees=0, translate=(0.2, 0.2)),  
+                # utils.sometimes(0.25, transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))),
+                # transforms.RandomCrop(size=(self.img_size[1], self.img_size[2]),  # Crop
+                #                     padding=(int(0.1 * self.img_size[1]), int(0.1 * self.img_size[2])),
+                #                     pad_if_needed=True,
+                #                     padding_mode='reflect')
+            ]
+        return transforms.Compose(base_transforms)
 
     def __getitem__(self, idx):
         cur_idx_row = self.df.iloc[idx]
@@ -405,6 +434,8 @@ class RSNADataset(Dataset):
         if self.transforms is not None:
             augmented = self.transforms(image=img)
             img = augmented['image']
+        # Augmentations for trainloader (if self.augment)
+        img = self.augment(img)
 
         img = img / 255
         img -= self.means

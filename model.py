@@ -129,7 +129,7 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
             image_backbone.load_state_dict(torch.load(model_path,  map_location=device), strict=False)
             image_backbone.to(device)
             image_backbone = torch.nn.DataParallel(image_backbone, device_ids=[1])
-            image_in_features = 2048
+            image_num_features = 2048
 
     # Freeze parameters so we don't backprop through them
     if pretrained in ["imagenet", "medical"]:
