@@ -305,7 +305,7 @@ class Model_extented(nn.Module):
         })
         
         y_true = df.true_label.values
-        y_pred = df.pred_label.values
+        y_pred = df.pred_label.values    
         y_conf = df.confidence.values   
 
         fig = reliability_diagram(y_true, y_pred, y_conf, num_bins=10, draw_ece=True,

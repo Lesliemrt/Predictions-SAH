@@ -35,7 +35,7 @@ for k in range(nb_iterations):
 
     # Load model
     from model import get_model, Classifier, Classifier_Many_Layers
-    model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier, metadata=True) #prob = prob for dropout
+    model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, metadata=True) #prob = prob for dropout
     my_model=Model_extented(model, epochs=5, lr=1e-3)
 
     # Training

@@ -20,9 +20,15 @@ patient_data2 = 8
 DATA_DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/Data/'
 DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/'
 
+# Output (Resangrado, VasoespasmoA, ANY Vasoespasmo, Hidrocefalia, Infarto, Crisis, DiasVM, DiasUCI, mRSalta, mRS1año, Exitus)
+target_output = 'VasoespasmoA'
+
 # Ro run on gpu if available
 import torch
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu") #to run on gpu if available
+
+
+
 
 # only for test with RSNA images
 TEST_IMAGES_DIR = DATA_DIR + 'stage_2_test/'
