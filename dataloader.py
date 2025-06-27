@@ -123,16 +123,16 @@ new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet
 new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
 
 # Create the DataFrame for the dataset
-data_df = new_label_df[['ANY Vasoespasm ','Path']]
-data_df = data_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
+data_df = new_label_df[[configs.target_output,'Path']]
+# data_df = data_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
 
 # Remove unexistant file/ path from data_df : 
-count_0 = len(data_df[data_df["ANY_Vasospasm"] == 0])
-count_1 = len(data_df[data_df["ANY_Vasospasm"] == 1])
+count_0 = len(data_df[data_df[configs.target_output] == 0])
+count_1 = len(data_df[data_df[configs.target_output] == 1])
 print("data_df before removing wrong paths : ","count 1 : ", count_1, "count 0 : ", count_0)
 data_df = data_df[data_df['Path'].apply(os.path.exists)]
-count_0 = len(data_df[data_df["ANY_Vasospasm"] == 0])
-count_1 = len(data_df[data_df["ANY_Vasospasm"] == 1])
+count_0 = len(data_df[data_df[configs.target_output] == 0])
+count_1 = len(data_df[data_df[configs.target_output] == 1])
 print("data_df after : ","count 1 : ", count_1, "count 0 : ", count_0)
 
 # Add dicom informations
@@ -158,7 +158,7 @@ data_df["post1_SOPInstanceUID"] = data_df.groupby(["PatientID", "SeriesInstanceU
 patiente = configs.patient #index of {patiente} in the path
 patient_df = data_df.copy()
 patient_df["HSA"] = patient_df["Path"].apply(lambda x: x.split('/')[patiente])
-patient_df = patient_df.groupby("HSA")["ANY_Vasospasm"].max().reset_index()  # patient's label = 1 if at least one image is positive
+patient_df = patient_df.groupby("HSA")[configs.target_output].max().reset_index()  # patient's label = 1 if at least one image is positive
 
 
 """DATA FRAME META DATA  (hospital_data_1)"""
@@ -179,7 +179,7 @@ data_df = pd.merge(data_df, metadata_df, on='HSA', how='left')
 # new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path_data2)
 
 # # Create the DataFrame for the dataset
-# data2_df = new_label_df[['ANY Vasoespasm ','Path']]
+# data2_df = new_label_df[[configs.target_output,'Path']]
 # data2_df = data2_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
 
 # # Remove unexistant file/ path from data_df : 
@@ -211,7 +211,7 @@ def create_dataloader():
     train_patients, val_test_patients = train_test_split(
         patient_df,
         train_size=configs.split_train,
-        stratify=patient_df["ANY_Vasospasm"],
+        stratify=patient_df[configs.target_output],
         random_state=configs.SEED
     )
     test_size = configs.split_test/(configs.split_valid + configs.split_test)
@@ -219,16 +219,16 @@ def create_dataloader():
     valid_patients, test_patients = train_test_split(
         val_test_patients,
         test_size=test_size,
-        stratify=val_test_patients["ANY_Vasospasm"],
+        stratify=val_test_patients[configs.target_output],
         random_state=configs.SEED
     )
 
     print("Train patient values : ")
-    print(train_patients["ANY_Vasospasm"].value_counts())
+    print(train_patients[configs.target_output].value_counts())
     print("Valid patient values : ")
-    print(valid_patients["ANY_Vasospasm"].value_counts())
+    print(valid_patients[configs.target_output].value_counts())
     print("Test patient values : ")
-    print(test_patients["ANY_Vasospasm"].value_counts())
+    print(test_patients[configs.target_output].value_counts())
 
     # Create DataFrames
     train_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in train_patients["HSA"].values)]
@@ -249,15 +249,15 @@ def create_dataloader():
     # train_oversample_df = pd.concat([train_df, vasospasm_df])
     # train_df = train_oversample_df
 
-    count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
-    count_1 = len(train_df[train_df["ANY_Vasospasm"] == 1])
+    count_0 = len(train_df[train_df[configs.target_output] == 0])
+    count_1 = len(train_df[train_df[configs.target_output] == 1])
     print("count 1 train : ", count_1, "count 0 train : ", count_0)
 
 
     # Labels 'ANY_Vasospasm'
-    train_labels = train_df["ANY_Vasospasm"]
-    valid_labels = valid_df["ANY_Vasospasm"]
-    test_labels = test_df["ANY_Vasospasm"]
+    train_labels = train_df[configs.target_output]
+    valid_labels = valid_df[configs.target_output]
+    test_labels = test_df[configs.target_output]
 
     # # ----------------------------------------Method 1 ------------------------------------------------
     # # Train Dataset

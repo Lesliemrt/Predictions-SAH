@@ -20,8 +20,9 @@ patient_data2 = 8
 DATA_DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/Data/'
 DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/'
 
-# Output (Resangrado, VasoespasmoA, ANY Vasoespasmo, Hidrocefalia, Infarto, Crisis, DiasVM, DiasUCI, mRSalta, mRS1año, Exitus)
-target_output = 'VasoespasmoA'
+# Output ('Resangrado', 'VasoespasmoA', 'ANY Vasoespasm ', 'Hidrocefalia', 'Infarto', 'Crisis', 'DiasVM', 'DiasUCI', 
+# 'mRSalta', 'mRS1año', 'Exitus')
+target_output = 'Exitus'
 
 # Ro run on gpu if available
 import torch

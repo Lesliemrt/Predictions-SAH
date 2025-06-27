@@ -60,6 +60,9 @@ for k in range(nb_iterations):
 avg_roc_auc = np.mean(auc_values)
 print("Average ROC AUC:", avg_roc_auc)
 
+max_roc_auc = np.max(auc_values)
+print("Max ROC AUC:", max_roc_auc)
+
 avg_train_accuracy = np.mean(training_accuracy_values)
 avg_valid_accuracy = np.mean(validation_accuracy_values)
 print(f"Average training accuracy : {avg_train_accuracy}, Average validation accuracy : {avg_valid_accuracy}")
@@ -70,7 +73,7 @@ plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
-plt.title(f'Receiver Operating Characteristic Curve \n Average ROC AUC: {avg_roc_auc}')
+plt.title(f'Receiver Operating Characteristic Curve \n Avg ROC AUC: {avg_roc_auc:.2f}  Max ROC AUC: {max_roc_auc:.2f} ')
 if nb_iterations<10 :
     plt.legend(loc="lower right")
 plt.tight_layout()

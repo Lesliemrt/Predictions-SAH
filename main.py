@@ -29,7 +29,7 @@ print("torch.cuda.get_device_name(0)", torch.cuda.get_device_name(0))
 # model = densenet169 or densenet121 or se_resnext50_32x4d (pretrained on medical for weights from 3rd contest)
 # pretrained = "imagenet"" for pretraining on ImageNet / "medical" for pretraining on Medical Images / False for no training
 # classifier = model.Classifier or model.Classifier_Many_Layers
-model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier, metadata = True)
+model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, metadata = True)
 # model = get_model_onnx(classifier_class=Classifier, in_features=2664, prob=0.5)
 my_model=Model_extented(model, epochs=5, lr=1e-3)
 
@@ -87,6 +87,8 @@ print("Auc-roc score : ",my_model.eval_performance(all_labels, all_probs))
 
 # Calibration eval
 print(my_model.calibration_plot(all_labels, all_probs))
+
+print(f"Output : {configs.target_output}")
 
 
 

@@ -164,7 +164,7 @@ class Model_extented(nn.Module):
                 random_index = np.random.randint(0, len(df))
 
                 img_path = df['Path'].iloc[random_index]
-                label = df['ANY_Vasospasm'].iloc[random_index]
+                label = df[configs.target_output].iloc[random_index]
 
                 img = utils._read_new(img_path)
 
