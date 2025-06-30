@@ -15,12 +15,13 @@ auc_values = []
 training_accuracy_values = []
 validation_accuracy_values = []
 lw = 2 #line width
+nb_iterations = 15
 
-nb_iterations = 3
+plt.figure()
 for k in range(nb_iterations):
 
     configs.SEED = np.random.randint(10000, 99999)
-    print(f"=========== ITERATION {k} ------ SEED = {configs.SEED}")
+    print(f"=========== ITERATION {k}/{nb_iterations-1} ------ SEED = {configs.SEED}")
 
     # For reproductibility
     np.random.seed(configs.SEED)
@@ -33,9 +34,9 @@ for k in range(nb_iterations):
     trainloader, validloader, testloader = dataloader.create_dataloader()
 
     # Load model
-    from model_many_layers import get_model
-    model = get_model(prob=0.5)  #prob = prob for dropout
-    my_model=Model_extented(model, epochs=4, lr=1e-3)
+    from model import get_model, Classifier, Classifier_Many_Layers
+    model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, metadata=True) #prob = prob for dropout
+    my_model=Model_extented(model, epochs=5, lr=1e-3)
 
     # Training
     my_model.trainloop(trainloader, validloader, testloader)
@@ -46,8 +47,8 @@ for k in range(nb_iterations):
     # plt.legend()
 
     # Add the values of each iteration to lists :
-    training_accuracy_values.append(my_model.eval_performance(trainloader)[0])
-    validation_accuracy_values.append(my_model.eval_performance(validloader)[0])
+    training_accuracy_values.append(my_model.eval_training_performance(trainloader)[0])
+    validation_accuracy_values.append(my_model.eval_training_performance(validloader)[0])
 
     results_auc_roc = my_model.auc_roc_iteration(testloader)
     auc_values.append(results_auc_roc[0])
@@ -59,6 +60,9 @@ for k in range(nb_iterations):
 avg_roc_auc = np.mean(auc_values)
 print("Average ROC AUC:", avg_roc_auc)
 
+max_roc_auc = np.max(auc_values)
+print("Max ROC AUC:", max_roc_auc)
+
 avg_train_accuracy = np.mean(training_accuracy_values)
 avg_valid_accuracy = np.mean(validation_accuracy_values)
 print(f"Average training accuracy : {avg_train_accuracy}, Average validation accuracy : {avg_valid_accuracy}")
@@ -69,9 +73,12 @@ plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
-plt.title(f'Receiver Operating Characteristic Curve')
-plt.legend(loc="lower right")
+plt.title(f'Receiver Operating Characteristic Curve \n Avg ROC AUC: {avg_roc_auc:.2f}  Max ROC AUC: {max_roc_auc:.2f} ')
+if nb_iterations<10 :
+    plt.legend(loc="lower right")
 plt.tight_layout()
-plt.show()
+# plt.show()
+plt.savefig(f"{configs.DIR}/results/auc roc iterations.png") 
+plt.close()
 
 

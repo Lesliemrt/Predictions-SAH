@@ -33,11 +33,11 @@ class Model_extented(nn.Module):
         self.accuracy_during_training = []
         self.valid_accuracy_during_training = []
         self.submission_predictions=[]
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #to run on gpu if available
+        self.device = configs.device
         self.model.to(self.device)
 
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, image, meta):
+        return self.model(image, meta)
 
     def trainloop(self, trainloader, validloader, testloader):
         self.model.train()
@@ -47,10 +47,13 @@ class Model_extented(nn.Module):
             start_time = time.time()
             running_loss = 0.0
             train_accuracy = 0.0
-            for inputs, labels in trainloader:
-                inputs, labels = inputs.float().to(self.device), labels.float().to(self.device) #model expect float32
+            for batch in trainloader:
+                inputs = batch['image']
+                meta = batch['meta']
+                labels = batch['label']
+                inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device) #model expect float32
                 self.optim.zero_grad()
-                outputs = self.forward(inputs)
+                outputs = self.forward(image=inputs, meta=meta)
                 labels = labels.unsqueeze(1)
                 loss = self.loss_function(outputs, labels)
                 loss.backward()
@@ -61,7 +64,6 @@ class Model_extented(nn.Module):
                 # Accuracy
                 probs = torch.sigmoid(outputs)
                 predicted_labels = (probs > 0.3).float() # Get predicted labels based on threshold
-                labels = labels.unsqueeze(1)
                 equals = (predicted_labels == labels) # Compare predicted and actual labels
                 train_accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
 
@@ -73,9 +75,12 @@ class Model_extented(nn.Module):
             with torch.no_grad():
                 val_loss = 0.0
                 val_accuracy = 0.0
-                for inputs, labels in validloader:
-                    inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
-                    outputs = self.forward(inputs)
+                for batch in validloader:
+                    inputs = batch['image']
+                    meta = batch['meta']
+                    labels = batch['label']
+                    inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
+                    outputs = self.forward(image = inputs, meta=meta)
                     labels = labels.unsqueeze(1)
                     loss = self.loss_function(outputs, labels)
                     val_loss += loss.item()
@@ -83,7 +88,6 @@ class Model_extented(nn.Module):
                     # Accuracy
                     probs = torch.sigmoid(outputs)
                     predicted_labels = (probs > 0.3).float() # Get predicted labels based on threshold
-                    labels = labels.unsqueeze(1)
                     equals = (predicted_labels == labels) # Compare predicted and actual labels
                     val_accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
 
@@ -106,16 +110,20 @@ class Model_extented(nn.Module):
         self.model.eval()
         # Turn off gradients for validation, saves memory and computations
         with torch.no_grad():
-            for inputs,labels in dataloader:
-                inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
-                outputs = self.forward(inputs)
+            for batch in dataloader:
+                inputs = batch['image']
+                meta = batch['meta']
+                labels = batch['label']
+                inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
+                outputs = self.forward(image=inputs, meta=meta)
                 probs = torch.sigmoid(outputs)
-                # print("Max prob in batch:", probs.max().item())
 
-                predicted_labels = (probs > 0.3).float() # Get predicted labels based on threshold
+                predicted_labels = (probs > 0.5).float() # Get predicted labels based on threshold
                 labels = labels.unsqueeze(1)
                 equals = (predicted_labels == labels) # Compare predicted and actual labels
-                accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
+                # accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
+                accuracy += torch.mean(equals.float()).item()
+
 
                 recall_metric.update(probs.view(-1), labels.view(-1))
             
@@ -130,10 +138,14 @@ class Model_extented(nn.Module):
         all_labels = []
         all_probs = []
         with torch.no_grad():
-            for inputs, labels in dataloader:
-                inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
-                outputs = self.forward(inputs)
+            for batch in dataloader:
+                inputs = batch['image']
+                meta = batch['meta']
+                labels = batch['label']
+                inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
+                outputs = self.forward(image=inputs, meta=meta)
                 probs = torch.sigmoid(outputs)
+                print("Max prob in batch:", probs.max().item())
 
                 all_labels.append(labels.cpu())
                 all_probs.append(probs.cpu())
@@ -152,9 +164,9 @@ class Model_extented(nn.Module):
                 random_index = np.random.randint(0, len(df))
 
                 img_path = df['Path'].iloc[random_index]
-                label = df['ANY_Vasospasm'].iloc[random_index]
+                label = df[configs.target_output].iloc[random_index]
 
-                img = utils._read(img_path)
+                img = utils._read_new(img_path)
 
                 img = img.float().unsqueeze(0).to(self.device)
                 output = self.forward(img)
@@ -165,47 +177,62 @@ class Model_extented(nn.Module):
                 plt.imshow(img, cmap='gray' if img.shape[2] == 1 else None)
                 plt.title(f"Réel: {label}, Prédiction: {probs.item():.4f}")
                 plt.axis("off")
-                plt.show()
+                # plt.show()
+                plt.savefig(f"{configs.DIR}/results/visualize predictions.png") 
+                plt.close()
+
         self.model.train()
 
 
-    def saliency(self, dataloader, index):
+    def saliency(self, dataloader, num_images_to_show):
         self.model.eval()
-        for inputs, _ in dataloader:
-            input_img = inputs[index].unsqueeze(0).float().to(self.device)
-            input_img.requires_grad = True
+        for i in range(num_images_to_show):
+            for batch in dataloader:
+                inputs = batch['image']
+                meta = batch['meta']
+                labels = batch['label']
+                batch_size = inputs.size(0)
+                index = np.random.randint(0, batch_size-1)
+                input_img = inputs[index].unsqueeze(0).float().to(self.device).detach().clone()
+                input_img.requires_grad = True
+                meta = meta[index].float().to(self.device)
 
-            output = self.forward(input_img)
-            probs = torch.sigmoid(output)
+                output = self.forward(input_img, meta)
+                probs = torch.sigmoid(output)
 
-            # Get the class with the highest predicted score
-            score, _ = torch.max(probs, dim=1)
-            score.backward()
-            # Get the saliency map: max of gradients across channels
-            saliency_map, _ = torch.max(torch.abs(input_img.grad[0]), dim=0)
-            saliency_map = (saliency_map - saliency_map.min()) / (saliency_map.max() - saliency_map.min())
+                # Get the class with the highest predicted score
+                score, _ = torch.max(probs, dim=1)
+                score.backward()
+                # Get the saliency map: max of gradients across channels
+                saliency_map, _ = torch.max(torch.abs(input_img.grad[0]), dim=0)
+                saliency_map = (saliency_map - saliency_map.min()) / (saliency_map.max() - saliency_map.min())
 
-            # Visualization
-            plt.figure(figsize=(10, 5))
-            plt.subplot(1, 2, 1)
-            img_np = input_img.detach().cpu().squeeze().permute(1, 2, 0).numpy()
-            plt.imshow(img_np, cmap='gray' if img_np.shape[2] == 1 else None)
-            plt.title("Original Image")
-            plt.axis("off")
-            plt.subplot(1, 2, 2)
-            plt.imshow(saliency_map.cpu(), cmap='hot')
-            plt.title("Saliency Map")
-            plt.axis("off")
-            plt.tight_layout()
-            plt.show()
+                # Visualization
+                plt.figure(figsize=(10, 5))
+                plt.subplot(1, 2, 1)
+                # img = utils.denormalize(input_img, means=[0.485, 0.456, 0.406], stds=[0.229, 0.224, 0.225])
+                img = torch.clamp(input_img, 0, 1)
+                img_np = img.detach().cpu().squeeze().permute(1, 2, 0).numpy()
+                plt.imshow(img_np, cmap='gray' if img_np.shape[2] == 1 else None)
+                plt.title(f"Original Image (label = {labels[index]})")
+                plt.axis("off")
+                plt.subplot(1, 2, 2)
+                plt.imshow(img_np, cmap='gray' if img_np.shape[2] == 1 else None)
+                plt.imshow(saliency_map.cpu(), cmap='hot', alpha=0.7)
+                plt.title("Saliency Map")
+                plt.axis("off")
+                plt.tight_layout()
+                # plt.show()
+                plt.savefig(f"{configs.DIR}/results/saliency{index}.png") 
+                plt.close()
 
-            break  # Only one image
         self.model.train()
     
     def gradcam(self, dataloader, index):
         self.model.eval()
         print("debut gradcam ")
-        for inputs, _ in dataloader:
+        for batch in dataloader:
+            inputs = batch['image']
             input_img = inputs[index].unsqueeze(0).float().to(self.device)
             input_img.requires_grad = True
             break #just for one image
@@ -233,7 +260,9 @@ class Model_extented(nn.Module):
                 axs[i].axis('off')
 
         plt.tight_layout()
-        plt.show()
+        # plt.show()
+        plt.savefig(f"{configs.DIR}/results/grad cam.png") 
+        plt.close()
 
     def eval_performance(self, all_labels, all_probs):
         predicted_labels = (all_probs > 0.5).astype(int)
@@ -259,7 +288,9 @@ class Model_extented(nn.Module):
         plt.ylabel('True Positive Rate')
         plt.title(f'Receiver Operating Characteristic Curve (Seed: {configs.SEED})')
         plt.legend(loc="lower right")
-        plt.show()
+        # plt.show()
+        plt.savefig(f"{configs.DIR}/results/auc roc curve.png") 
+        plt.close()
 
         self.model.train()
         return roc_auc_score_
@@ -274,7 +305,7 @@ class Model_extented(nn.Module):
         })
         
         y_true = df.true_label.values
-        y_pred = df.pred_label.values
+        y_pred = df.pred_label.values    
         y_conf = df.confidence.values   
 
         fig = reliability_diagram(y_true, y_pred, y_conf, num_bins=10, draw_ece=True,
@@ -335,9 +366,12 @@ class Model_extented(nn.Module):
         all_labels = []
         all_probs = []
         with torch.no_grad():
-            for inputs, labels in dataloader:
-                inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
-                outputs = self.forward(inputs)
+            for batch in dataloader:
+                inputs = batch['image']
+                meta = batch['meta']
+                labels = batch['label']
+                inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
+                outputs = self.forward(image=inputs, meta=meta)
                 probs = torch.sigmoid(outputs)
 
                 all_labels.append(labels.cpu())

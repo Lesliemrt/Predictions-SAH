@@ -13,8 +13,23 @@ TRAIN_BATCH_SIZE = 32
 VALID_BATCH_SIZE = 32
 TEST_BATCH_SIZE = 32
 
+patient = 9 #index of {patiente} in the path (hospital_data_1)
+patient_data2 = 8
+
 # Folders
-DATA_DIR = 'C:\\Users\\Lesli\\Documents\\Doc administratif\\2024-2025\\Madrid\\Stage\\Projet predictions SAH\\'
+DATA_DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/Data/'
+DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/'
+
+# Output ('Resangrado', 'VasoespasmoA', 'ANY Vasoespasm ', 'Hidrocefalia', 'Infarto', 'Crisis', 'DiasVM', 'DiasUCI', 
+# 'mRSalta', 'mRS1año', 'Exitus')
+target_output = 'Exitus'
+
+# Ro run on gpu if available
+import torch
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu") #to run on gpu if available
+
+
+
 
 # only for test with RSNA images
 TEST_IMAGES_DIR = DATA_DIR + 'stage_2_test/'

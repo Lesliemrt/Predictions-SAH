@@ -1,13 +1,39 @@
 #data
 hospital_data_1/
+hospital_data_1_/
+*.zip
+hospital_data_2/
+OneDrive_0_02_06_2025/
+OneDrive_1_02_06_2025/
+OneDrive_2_02_06_2025/
+OneDrive_2_03_06_2025/
+OneDrive_1_03_06_2025/
+*.json
+
+# plot
+results/visualize*
+results/hospital_data_2_visualization/
 
 #others
 *.h5
 **/__pycache__/
+*.onnx
+keras_to_onnx_converter/
+*.xlsx#
+*.pth
+RadImageNet_pytorch/
+converter_pytorch.py
+densenet169_IR.npy
+densenet169_IR.pb
+keras_weights.npy
+npy2pth.py
+
+
+#tests for datapreprocessing
 
 #results (not useful)
 non_existant_file.xlsx
-results.xlsx
+
 
 #data
 stage_2_sample_submission.csv
