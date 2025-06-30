@@ -11,6 +11,7 @@ import cv2
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, WeightedRandomSampler
 import torch.nn.functional as F
+import torch.nn.functional as F
 
 import configs
 import utils
@@ -32,15 +33,19 @@ class TrainDataset(Dataset):
         if self.augment:
             base_transforms += [
                 # utils.sometimes(0.50, transforms.RandomResizedCrop(size=(self.img_size[1], self.img_size[2]), scale=(0.8, 1.0))),
+                # utils.sometimes(0.50, transforms.RandomResizedCrop(size=(self.img_size[1], self.img_size[2]), scale=(0.8, 1.0))),
                 utils.sometimes(0.3, transforms.RandomAffine(degrees=0, scale=(0.8, 1.2))),  # Zoom
                 utils.sometimes(0.3, transforms.RandomRotation(degrees=30)),   # Rotation
                 utils.sometimes(0.3, transforms.ColorJitter(brightness=0.2)),  # Brightness variation (≈ Multiply)
+                # utils.sometimes(0.3, transforms.RandomErasing(scale=(0.02, 0.1))),
+                # utils.sometimes(0.3, transforms.RandomAffine(degrees=0, translate=(0.2, 0.2))) # Translation
                 # utils.sometimes(0.3, transforms.RandomErasing(scale=(0.02, 0.1))),
                 # utils.sometimes(0.3, transforms.RandomAffine(degrees=0, translate=(0.2, 0.2))) # Translation
 
                 # Other augmentations :
                 # transforms.RandomHorizontalFlip(p=0.25),
                 # transforms.RandomVerticalFlip(p=0.10),
+                # transforms.RandomAffine(degrees=0, translate=(0.2, 0.2)),  
                 # transforms.RandomAffine(degrees=0, translate=(0.2, 0.2)),  
                 # utils.sometimes(0.25, transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))),
                 # transforms.RandomCrop(size=(self.img_size[1], self.img_size[2]),  # Crop
@@ -54,6 +59,7 @@ class TrainDataset(Dataset):
         return len(self.ids)
 
     def __getitem__(self, index):
+        # image
         # image
         image_path = self.dataset['Path'].iloc[index]
 
@@ -208,6 +214,7 @@ data_df = pd.merge(data_df, metadata_df, on='HSA', how='left')
 
 # Everything inside create_dataloader to be able to change the seed with main_40_iterations
 def create_dataloader():
+    print(patient_df["ANY_Vasospasm"].value_counts())
     train_patients, val_test_patients = train_test_split(
         patient_df,
         train_size=configs.split_train,
@@ -249,9 +256,10 @@ def create_dataloader():
     # train_oversample_df = pd.concat([train_df, vasospasm_df])
     # train_df = train_oversample_df
 
-    count_0 = len(train_df[train_df[configs.target_output] == 0])
-    count_1 = len(train_df[train_df[configs.target_output] == 1])
+    count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
+    count_1 = len(train_df[train_df["ANY_Vasospasm"] == 1])
     print("count 1 train : ", count_1, "count 0 train : ", count_0)
+
 
 
     # Labels 'ANY_Vasospasm'
