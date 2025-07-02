@@ -124,58 +124,42 @@ class TestDataset(Dataset):
 
 
 """TRAINING VALID AND TEST DATASET   (hospital_data_1)"""
-# Read the excel with label
-new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='selected_cortes')
-new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
 
-# Create the DataFrame for the dataset
-data_df = new_label_df[[configs.target_output,'Path']]
-# data_df = data_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
+def load_data(target_output=configs.target_output):
+    # Read the excel with label
+    new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='selected_cortes')
+    new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
 
-# Remove unexistant file/ path from data_df : 
-count_0 = len(data_df[data_df[configs.target_output] == 0])
-count_1 = len(data_df[data_df[configs.target_output] == 1])
-print("data_df before removing wrong paths : ","count 1 : ", count_1, "count 0 : ", count_0)
-data_df = data_df[data_df['Path'].apply(os.path.exists)]
-count_0 = len(data_df[data_df[configs.target_output] == 0])
-count_1 = len(data_df[data_df[configs.target_output] == 1])
-print("data_df after : ","count 1 : ", count_1, "count 0 : ", count_0)
+    # Create the DataFrame for the dataset
+    data_df = new_label_df[[configs.target_output,'Path']]
+    # data_df = data_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
 
-# Add dicom informations
-data_df[["PatientID", "SOPInstanceUID", "SeriesInstanceUID", "ImagePositionPatient2"]] = data_df["Path"].apply(utils.extract_dicom_info)
-data_df = data_df.sort_values(["PatientID", "SeriesInstanceUID", "ImagePositionPatient2"]).reset_index(drop=True)
-data_df["pre1_SOPInstanceUID"] = data_df.groupby(["PatientID", "SeriesInstanceUID"])["SOPInstanceUID"].shift(1)
-data_df["post1_SOPInstanceUID"] = data_df.groupby(["PatientID", "SeriesInstanceUID"])["SOPInstanceUID"].shift(-1)
+    # Remove unexistant file/ path from data_df : 
+    count_0 = len(data_df[data_df[configs.target_output] == 0])
+    count_1 = len(data_df[data_df[configs.target_output] == 1])
+    print("data_df before removing wrong paths : ","count 1 : ", count_1, "count 0 : ", count_0)
+    data_df = data_df[data_df['Path'].apply(os.path.exists)]
+    count_0 = len(data_df[data_df[configs.target_output] == 0])
+    count_1 = len(data_df[data_df[configs.target_output] == 1])
+    print("data_df after : ","count 1 : ", count_1, "count 0 : ", count_0)
 
-# No stratified split in patient
-# patiente = 8 #index of {patiente} in the path
-# unique_patients = data_df['Path'].apply(lambda x: x.split('/')[patiente]).unique()
-# print('unique_patients : ', unique_patients)
-# np.random.shuffle(unique_patients)
+    # Add dicom informations
+    data_df[["PatientID", "SOPInstanceUID", "SeriesInstanceUID", "ImagePositionPatient2"]] = data_df["Path"].apply(utils.extract_dicom_info)
+    data_df = data_df.sort_values(["PatientID", "SeriesInstanceUID", "ImagePositionPatient2"]).reset_index(drop=True)
+    data_df["pre1_SOPInstanceUID"] = data_df.groupby(["PatientID", "SeriesInstanceUID"])["SOPInstanceUID"].shift(1)
+    data_df["post1_SOPInstanceUID"] = data_df.groupby(["PatientID", "SeriesInstanceUID"])["SOPInstanceUID"].shift(-1)
 
-# split_idx_train = int(len(unique_patients) * configs.split_train)
-# split_idx_valid = int(len(unique_patients) * (configs.split_train + configs.split_valid))
+    """DATA FRAME META DATA  (hospital_data_1)"""
+    metadata_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
+    metadata_df = metadata_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'HuntHess', 'WFNS']]
+    metadata_df = metadata_df.rename(columns={'Edad':'Age','Sexo':'Sex'})
+    metadata_df = metadata_df[:197] # Delete the last lines of the excel that contains totals
 
-# train_patients = unique_patients[:split_idx_train]
-# valid_patients = unique_patients[split_idx_train:split_idx_valid]
-# test_patients = unique_patients[split_idx_valid:]
+    # Add metadata to data_df
+    data_df['HSA'] = data_df['Path'].apply(lambda x: x.split('/')[patiente])
+    data_df = pd.merge(data_df, metadata_df, on='HSA', how='left')
 
-# Stratified split in patients 
-patiente = configs.patient #index of {patiente} in the path
-patient_df = data_df.copy()
-patient_df["HSA"] = patient_df["Path"].apply(lambda x: x.split('/')[patiente])
-patient_df = patient_df.groupby("HSA")[configs.target_output].max().reset_index()  # patient's label = 1 if at least one image is positive
-
-
-"""DATA FRAME META DATA  (hospital_data_1)"""
-metadata_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
-metadata_df = metadata_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'HuntHess', 'WFNS']]
-metadata_df = metadata_df.rename(columns={'Edad':'Age','Sexo':'Sex'})
-metadata_df = metadata_df[:197] # Delete the last lines of the excel that contains totals
-
-# Add metadata to data_df
-data_df['HSA'] = data_df['Path'].apply(lambda x: x.split('/')[patiente])
-data_df = pd.merge(data_df, metadata_df, on='HSA', how='left')
+    return data_df
 
 
 # for later to test on new data : 
@@ -208,25 +192,28 @@ data_df = pd.merge(data_df, metadata_df, on='HSA', how='left')
 # data2_df['HSA'] = data2_df['Path'].apply(lambda x: x.split('/')[patiente])
 # data2_df = pd.merge(data2_df, metadata2_df, on='HSA', how='left')
 
+def split_data(df = data_df, random_seed):
+    # Stratified split in patients 
+    patiente = configs.patient #index of {patiente} in the path
+    patient_df = df.copy()
+    patient_df["HSA"] = patient_df["Path"].apply(lambda x: x.split('/')[patiente])
+    patient_df = patient_df.groupby("HSA")[configs.target_output].max().reset_index()  # patient's label = 1 if at least one image is positive
 
-
-
-
-# Everything inside create_dataloader to be able to change the seed with main_40_iterations
-def create_dataloader():
-    train_patients, val_test_patients = train_test_split(
+    # Initial split: test set is fixed once
+    train_val_patients, test_patients = train_test_split(
         patient_df,
-        train_size=configs.split_train,
+        test_size=configs.split_test,
         stratify=patient_df[configs.target_output],
-        random_state=configs.SEED
+        random_state=configs.SEED  # <- fix seed
     )
-    test_size = configs.split_test/(configs.split_valid + configs.split_test)
 
-    valid_patients, test_patients = train_test_split(
-        val_test_patients,
-        test_size=test_size,
-        stratify=val_test_patients[configs.target_output],
-        random_state=configs.SEED
+    train_size = configs.split_train/(configs.split_valid + configs.split_train)
+
+    train_patients, valid_patients = train_test_split(
+        train_val_patients,
+        train_size=train_size,
+        stratify=train_val_patients[configs.target_output],
+        random_state=random_seed
     )
 
     print("Train patient values : ")
@@ -235,6 +222,12 @@ def create_dataloader():
     print(valid_patients[configs.target_output].value_counts())
     print("Test patient values : ")
     print(test_patients[configs.target_output].value_counts())
+
+    return train_patients, valid_patients, test_patients
+
+
+# Everything inside create_dataloader to be able to change the seed with main_40_iterations
+def create_dataloader(data_df, train_patients, valid_patients, test_patients, target_output=configs.target_output):
 
     # Create DataFrames
     train_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in train_patients["HSA"].values)]
@@ -255,16 +248,14 @@ def create_dataloader():
     # train_oversample_df = pd.concat([train_df, vasospasm_df])
     # train_df = train_oversample_df
 
-    count_0 = len(train_df[train_df[configs.target_output] == 0])
-    count_1 = len(train_df[train_df[configs.target_output] == 1])
+    count_0 = len(train_df[train_df[target_output] == 0])
+    count_1 = len(train_df[train_df[target_output] == 1])
     print("count 1 train : ", count_1, "count 0 train : ", count_0)
 
-
-
     # Labels 'ANY_Vasospasm'
-    train_labels = train_df[configs.target_output]
-    valid_labels = valid_df[configs.target_output]
-    test_labels = test_df[configs.target_output]
+    train_labels = train_df[target_output]
+    valid_labels = valid_df[target_output]
+    test_labels = test_df[target_output]
 
     # # ----------------------------------------Method 1 ------------------------------------------------
     # # Train Dataset

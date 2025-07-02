@@ -146,58 +146,58 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
 
 
 
-# For model pretrained by jaymin on dataset RSNA2019 contest    
-class Densenet169_onnx(nn.Module): 
-    def __init__(self):
-        super().__init__()
-        providers = ['CPUExecutionProvider']
-        output_path = DATA_DIR + "densenet169_model.onnx"
-        self.m = rt.InferenceSession(output_path, providers=providers)
-        self.input_name = self.m.get_inputs()[0].name
+# # For model pretrained by jaymin on dataset RSNA2019 contest    
+# class Densenet169_onnx(nn.Module): 
+#     def __init__(self):
+#         super().__init__()
+#         providers = ['CPUExecutionProvider']
+#         output_path = DATA_DIR + "densenet169_model.onnx"
+#         self.m = rt.InferenceSession(output_path, providers=providers)
+#         self.input_name = self.m.get_inputs()[0].name
 
-    def forward(self, x):
-        device = configs.device
-        x_numpy = x.permute(0, 2, 3, 1).detach().cpu().numpy()
-        onnx_pred = self.m.run(None, {self.input_name: x_numpy})
-        features = torch.tensor(onnx_pred[0], dtype=torch.float32, device=device)  # force device
-        return features
-
-
-class CombineModel_onnx(nn.Module):
-    def __init__(self, image_backbone, meta_backbone, classifier):
-        super().__init__()
-        self.image_backbone = image_backbone
-        self.meta_backbone = meta_backbone
-        self.classifier = classifier
-    def forward(self, image, meta):
-        image_output = self.image_backbone(image) # not trainable
-        meta_output = self.meta_backbone(meta)
-        if meta_output.dim() == 1:
-            meta_output = meta_output.unsqueeze(0)
-        combined = torch.cat((image_output, meta_output), dim=1)
-        output = self.classifier(combined)
-        return output
+#     def forward(self, x):
+#         device = configs.device
+#         x_numpy = x.permute(0, 2, 3, 1).detach().cpu().numpy()
+#         onnx_pred = self.m.run(None, {self.input_name: x_numpy})
+#         features = torch.tensor(onnx_pred[0], dtype=torch.float32, device=device)  # force device
+#         return features
 
 
-def get_model_onnx(classifier_class=Classifier, in_features=2000, prob=0.5):
-    image_backbone = Densenet169_onnx()
-    meta_backbone = MLP(1000)
-    classifier = classifier_class(in_features, prob)
-    model = CombineModel_onnx(image_backbone=image_backbone, meta_backbone = meta_backbone, classifier=classifier)
-    return model
+# class CombineModel_onnx(nn.Module):
+#     def __init__(self, image_backbone, meta_backbone, classifier):
+#         super().__init__()
+#         self.image_backbone = image_backbone
+#         self.meta_backbone = meta_backbone
+#         self.classifier = classifier
+#     def forward(self, image, meta):
+#         image_output = self.image_backbone(image) # not trainable
+#         meta_output = self.meta_backbone(meta)
+#         if meta_output.dim() == 1:
+#             meta_output = meta_output.unsqueeze(0)
+#         combined = torch.cat((image_output, meta_output), dim=1)
+#         output = self.classifier(combined)
+#         return output
 
-class Model_6classes_onnx(nn.Module):
-    def __init__(self, prob, in_features):
-        super().__init__()
-        self.base_model = Densenet169_onnx()
-        self.avgpool = nn.AdaptiveAvgPool2d(1)
-        self.dropout = nn.Dropout(p=prob)
-        self.linear = nn.Linear(in_features, 6)
-    def forward(self, x):
-        x = self.base_model(x)
-        print("Shape base model:", x.shape)
-        x = self.linear(x)
-        return x
+
+# def get_model_onnx(classifier_class=Classifier, in_features=2000, prob=0.5):
+#     image_backbone = Densenet169_onnx()
+#     meta_backbone = MLP(1000)
+#     classifier = classifier_class(in_features, prob)
+#     model = CombineModel_onnx(image_backbone=image_backbone, meta_backbone = meta_backbone, classifier=classifier)
+#     return model
+
+# class Model_6classes_onnx(nn.Module):
+#     def __init__(self, prob, in_features):
+#         super().__init__()
+#         self.base_model = Densenet169_onnx()
+#         self.avgpool = nn.AdaptiveAvgPool2d(1)
+#         self.dropout = nn.Dropout(p=prob)
+#         self.linear = nn.Linear(in_features, 6)
+#     def forward(self, x):
+#         x = self.base_model(x)
+#         print("Shape base model:", x.shape)
+#         x = self.linear(x)
+#         return x
     
 class DenseNet169_change_avg(nn.Module):
     def __init__(self):

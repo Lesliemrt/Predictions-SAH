@@ -11,6 +11,8 @@ import train
 import configs
 from model import get_model, get_model_onnx, Classifier, Classifier_Many_Layers
 
+print("torch.cuda.is_available()", torch.cuda.is_available()) 
+
 # For reproductibility
 np.random.seed(SEED)
 torch.manual_seed(SEED)
@@ -19,10 +21,9 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
 # Load data
-trainloader, validloader, testloader = dataloader.create_dataloader()
-
-print("torch.cuda.is_available()", torch.cuda.is_available()) 
-print("torch.cuda.get_device_name(0)", torch.cuda.get_device_name(0))
+df = dataloader.load_data(target_output=configs.target_output)
+train_patients, valid_patients, test_patients = dataloader.split_data(df = df, SEED)
+trainloader, validloader, testloader = dataloader.create_dataloader(df, train_patients, valid_patients, test_patients, target_output=configs.target_output)
 
 # Load model
 # prob = prob for dropout
@@ -66,9 +67,6 @@ plt.close()
 
 # Saliency maps
 print(my_model.saliency(testloader, num_images_to_show=10))
-
-# Grad cam
-# print(my_model.gradcam(testloader, index = 0))
 
 # Results testloader (to save time)
 all_labels, all_probs = my_model.return_outputs(testloader)       

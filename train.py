@@ -312,56 +312,8 @@ class Model_extented(nn.Module):
                           draw_bin_importance="alpha", draw_averages=True,
                           title="Reliability diagram (top) and confidence histogram (bottom)", figsize=(6, 6), dpi=100, 
                           return_fig=True)
-
     
-    # def auc_roc(self, dataloader):
-    #     self.model.eval()
-    #     all_labels = []
-    #     all_probs = []
-    #     with torch.no_grad():
-    #         for inputs, labels in dataloader:
-    #             inputs, labels = inputs.float().to(self.device), labels.float().to(self.device)
-    #             outputs = self.forward(inputs)
-    #             probs = torch.sigmoid(outputs)
-
-    #             all_labels.append(labels.cpu())
-    #             all_probs.append(probs.cpu())
-
-    #     # Concatenate all batchs
-    #     all_labels = torch.cat(all_labels).numpy()
-    #     all_probs = torch.cat(all_probs).numpy()
-    #     # results.extend(zip(all_labels, all_probs))
-
-    #     predicted_labels = (all_probs > 0.5).astype(int)
-    #     print("Classification report at threshold 0.5:")
-    #     print(classification_report(all_labels, predicted_labels))
-
-    #     roc_auc_score_ = roc_auc_score(all_labels, all_probs)
-
-    #     fpr, tpr, thresholds = roc_curve(all_labels, all_probs) #false positiv rate and true positiv rate
-    #     roc_auc = auc(fpr, tpr) # same as roc_auc_score but different method
-
-    #     plt.figure(figsize=(12, 6))
-
-    #     # Plot the curve
-    #     plt.subplot(1, 2, 1)
-    #     lw = 2
-    #     plt.plot(fpr, tpr, color='magenta',
-    #             lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
-    #     plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-    #     plt.xlim([0.0, 1.0])
-    #     plt.ylim([0.0, 1.05])
-    #     plt.xlabel('False Positive Rate')
-    #     plt.ylabel('True Positive Rate')
-    #     plt.title(f'Receiver Operating Characteristic Curve (Seed: {configs.SEED})')
-    #     plt.legend(loc="lower right")
-    #     plt.show()
-
-    #     self.model.train()
-
-    #     return roc_auc_score_
-    
-    def auc_roc_iteration(self, dataloader):
+    def auc_roc(self, dataloader):
         self.model.eval()
         all_labels = []
         all_probs = []

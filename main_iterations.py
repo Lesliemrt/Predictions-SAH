@@ -8,6 +8,7 @@ import dataloader
 import utils
 import train
 import configs
+from model import get_model, Classifier, Classifier_Many_Layers
 
 all_fpr = []
 all_tpr = []
@@ -16,25 +17,28 @@ training_accuracy_values = []
 validation_accuracy_values = []
 lw = 2 #line width
 nb_iterations = 15
+results = []
 
 plt.figure()
 for k in range(nb_iterations):
 
-    configs.SEED = np.random.randint(10000, 99999)
+    seed = np.random.randint(10000, 99999)
     print(f"=========== ITERATION {k}/{nb_iterations-1} ------ SEED = {configs.SEED}")
 
     # For reproductibility
-    np.random.seed(configs.SEED)
-    torch.manual_seed(configs.SEED)
-    torch.cuda.manual_seed_all(configs.SEED)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(cseed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
     # Load data
-    trainloader, validloader, testloader = dataloader.create_dataloader()
+    df = dataloader.load_data(target_output=configs.target_output)
+    train_patients, valid_patients, test_patients = dataloader.split_data(df = df, seed)
+    trainloader, validloader, testloader = dataloader.create_dataloader(df, train_patients, valid_patients, test_patients, target_output=configs.target_output)
+
 
     # Load model
-    from model import get_model, Classifier, Classifier_Many_Layers
     model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, metadata=True) #prob = prob for dropout
     my_model=Model_extented(model, epochs=5, lr=1e-3)
 
@@ -50,23 +54,27 @@ for k in range(nb_iterations):
     training_accuracy_values.append(my_model.eval_training_performance(trainloader)[0])
     validation_accuracy_values.append(my_model.eval_training_performance(validloader)[0])
 
-    results_auc_roc = my_model.auc_roc_iteration(testloader)
+    results_auc_roc = my_model.auc_roc(validloader)
+
+    # Save scores and weights
+    results.append({'seed': seed, 'auc_roc_val': results_auc_roc[0]})
+
+    path = f"{configs.DIR}checkpoints/model_seed_{seed}_auc_{results_auc_roc[0]:.4f}.pt"
+    torch.save(model.state_dict(), path)
+
+    # To print curves
     auc_values.append(results_auc_roc[0])
     fpr = results_auc_roc[1]
     tpr = results_auc_roc[2]
-
     plt.plot(fpr, tpr, lw=lw, label=f'Seed {configs.SEED} (AUC = {results_auc_roc[0]:.2f})')
 
 avg_roc_auc = np.mean(auc_values)
 print("Average ROC AUC:", avg_roc_auc)
-
 max_roc_auc = np.max(auc_values)
 print("Max ROC AUC:", max_roc_auc)
-
 avg_train_accuracy = np.mean(training_accuracy_values)
 avg_valid_accuracy = np.mean(validation_accuracy_values)
 print(f"Average training accuracy : {avg_train_accuracy}, Average validation accuracy : {avg_valid_accuracy}")
-
 # Plot the curve
 plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
 plt.xlim([0.0, 1.0])
@@ -82,3 +90,28 @@ plt.savefig(f"{configs.DIR}/results/auc roc iterations.png")
 plt.close()
 
 
+# Save the list of all models
+path = f"{configs.DIR}checkpoints/auc_roc_val_scores.csv"
+with open(path, "w", newline="") as csvfile:
+    writer = csv.DictWriter(csvfile, fieldnames=["seed", "auc_roc_val"])
+    writer.writeheader()
+    for row in results:
+        writer.writerow(row)
+
+# Select the 5 best 
+top_5_models = sorted(results, key=lambda x: x['auc_roc_val'], reverse=True)[:5]
+print("Top 5 models:", top_5_models)
+
+# Split
+
+
+# Predict for each 5
+predict = []
+for item in top_5_models:
+    seed = item['seed']
+    auc = item['auc_val']
+    path = f"checkpoints/model_seed_{seed}_auc_{auc:.4f}.pt"
+
+# Take the mean of predictions
+
+# Final auc roc score
