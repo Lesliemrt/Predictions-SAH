@@ -214,7 +214,6 @@ data_df = pd.merge(data_df, metadata_df, on='HSA', how='left')
 
 # Everything inside create_dataloader to be able to change the seed with main_40_iterations
 def create_dataloader():
-    print(patient_df["ANY_Vasospasm"].value_counts())
     train_patients, val_test_patients = train_test_split(
         patient_df,
         train_size=configs.split_train,
@@ -256,8 +255,8 @@ def create_dataloader():
     # train_oversample_df = pd.concat([train_df, vasospasm_df])
     # train_df = train_oversample_df
 
-    count_0 = len(train_df[train_df["ANY_Vasospasm"] == 0])
-    count_1 = len(train_df[train_df["ANY_Vasospasm"] == 1])
+    count_0 = len(train_df[train_df[configs.target_output] == 0])
+    count_1 = len(train_df[train_df[configs.target_output] == 1])
     print("count 1 train : ", count_1, "count 0 train : ", count_0)
 
 

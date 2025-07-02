@@ -37,7 +37,6 @@ class Classifier_Many_Layers(nn.Module):
         self.linear5 = nn.Linear(128, 64)
         self.linear6 = nn.Linear(64, 32)
         self.linear7 = nn.Linear(32,1)
-        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         x = self.linear1(x)
