@@ -7,6 +7,8 @@ import numpy as np
 import pydicom
 from albumentations import Compose, Resize, CenterCrop
 import cv2
+import csv
+
 # from iterstrat.ml_stratifiers import MultilabelStratifiedShuffleSplit
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, WeightedRandomSampler
@@ -156,7 +158,7 @@ def load_data(target_output=configs.target_output):
     metadata_df = metadata_df[:197] # Delete the last lines of the excel that contains totals
 
     # Add metadata to data_df
-    data_df['HSA'] = data_df['Path'].apply(lambda x: x.split('/')[patiente])
+    data_df['HSA'] = data_df['Path'].apply(lambda x: x.split('/')[configs.patient])
     data_df = pd.merge(data_df, metadata_df, on='HSA', how='left')
 
     return data_df
@@ -192,11 +194,10 @@ def load_data(target_output=configs.target_output):
 # data2_df['HSA'] = data2_df['Path'].apply(lambda x: x.split('/')[patiente])
 # data2_df = pd.merge(data2_df, metadata2_df, on='HSA', how='left')
 
-def split_data(df = data_df, random_seed):
+def split_data(df, random_seed):
     # Stratified split in patients 
-    patiente = configs.patient #index of {patiente} in the path
     patient_df = df.copy()
-    patient_df["HSA"] = patient_df["Path"].apply(lambda x: x.split('/')[patiente])
+    patient_df["HSA"] = patient_df["Path"].apply(lambda x: x.split('/')[configs.patient])
     patient_df = patient_df.groupby("HSA")[configs.target_output].max().reset_index()  # patient's label = 1 if at least one image is positive
 
     # Initial split: test set is fixed once
@@ -227,12 +228,12 @@ def split_data(df = data_df, random_seed):
 
 
 # Everything inside create_dataloader to be able to change the seed with main_40_iterations
-def create_dataloader(data_df, train_patients, valid_patients, test_patients, target_output=configs.target_output):
+def create_dataloader(data_df, train_patients, valid_patients, test_patients, target_output):
 
     # Create DataFrames
-    train_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in train_patients["HSA"].values)]
-    valid_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in valid_patients["HSA"].values)]
-    test_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[patiente] in test_patients["HSA"].values)]
+    train_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[configs.patient] in train_patients["HSA"].values)]
+    valid_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[configs.patient] in valid_patients["HSA"].values)]
+    test_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[configs.patient] in test_patients["HSA"].values)]
 
     # for later to test on new data : 
     # test_df = data2_df[data2_df['Path'].apply(lambda x: x.split('/')[patient_data2] in data2_df["HSA"].values)]

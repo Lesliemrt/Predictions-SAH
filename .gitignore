@@ -27,6 +27,7 @@ densenet169_IR.npy
 densenet169_IR.pb
 keras_weights.npy
 npy2pth.py
+model_seed*
 
 
 #tests for datapreprocessing
@@ -41,7 +42,6 @@ stage_2_test/
 stage_2_train.csv
 stage_2_train/
 hospital_data_1/
-*.csv
 
 #old model
 pytorch_prepared_model_(densenet169)_leslie.py

@@ -35,7 +35,7 @@ model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "m
 my_model=Model_extented(model, epochs=5, lr=1e-3)
 
 # Training
-my_model.trainloop(trainloader, validloader, testloader)
+my_model.trainloop(trainloader, validloader)
 
 # à bouger de place
 # Save weights

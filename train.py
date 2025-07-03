@@ -2,6 +2,7 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 import torch
 from torch import optim
@@ -39,7 +40,7 @@ class Model_extented(nn.Module):
     def forward(self, image, meta):
         return self.model(image, meta)
 
-    def trainloop(self, trainloader, validloader, testloader):
+    def trainloop(self, trainloader, validloader):
         self.model.train()
         scheduler = StepLR(self.optim, step_size=2, gamma=0.5) # Every 2 epochs, split lr by 2
         for epoch in range (self.epochs):
@@ -47,7 +48,7 @@ class Model_extented(nn.Module):
             start_time = time.time()
             running_loss = 0.0
             train_accuracy = 0.0
-            for batch in trainloader:
+            for batch in tqdm(trainloader, total=len(trainloader), desc="Training"):
                 inputs = batch['image']
                 meta = batch['meta']
                 labels = batch['label']
@@ -75,7 +76,7 @@ class Model_extented(nn.Module):
             with torch.no_grad():
                 val_loss = 0.0
                 val_accuracy = 0.0
-                for batch in validloader:
+                for batch in tqdm(validloader, total=len(validloader), desc="Validation"):
                     inputs = batch['image']
                     meta = batch['meta']
                     labels = batch['label']
@@ -138,14 +139,14 @@ class Model_extented(nn.Module):
         all_labels = []
         all_probs = []
         with torch.no_grad():
-            for batch in dataloader:
+            for batch in tqdm(dataloader, total=len(dataloader), desc="Predicting"):
                 inputs = batch['image']
                 meta = batch['meta']
                 labels = batch['label']
                 inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
                 outputs = self.forward(image=inputs, meta=meta)
                 probs = torch.sigmoid(outputs)
-                print("Max prob in batch:", probs.max().item())
+                # print("Max prob in batch:", probs.max().item())
 
                 all_labels.append(labels.cpu())
                 all_probs.append(probs.cpu())
@@ -318,7 +319,7 @@ class Model_extented(nn.Module):
         all_labels = []
         all_probs = []
         with torch.no_grad():
-            for batch in dataloader:
+            for batch in tqdm(dataloader, total=len(dataloader), desc="Calculating auc roc score"):
                 inputs = batch['image']
                 meta = batch['meta']
                 labels = batch['label']
@@ -333,7 +334,7 @@ class Model_extented(nn.Module):
         all_labels = torch.cat(all_labels).numpy()
         all_probs = torch.cat(all_probs).numpy()
 
-        fpr, tpr, thresholds = roc_curve(all_labels, all_probs) #false positiv rate and true positiv rate
+        fpr, tpr, _ = roc_curve(all_labels, all_probs) #false positiv rate and true positiv rate
         roc_auc = auc(fpr, tpr) # same as roc_auc_score but different method
 
         self.model.train()
