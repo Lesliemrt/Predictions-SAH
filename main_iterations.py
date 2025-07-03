@@ -18,7 +18,7 @@ auc_values = []
 training_accuracy_values = []
 validation_accuracy_values = []
 lw = 2 #line width
-nb_iterations = 10
+nb_iterations = 20
 results = []
 
 df = dataloader.load_data(target_output=configs.target_output)
@@ -142,6 +142,7 @@ plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title(f'Receiver Operating Characteristic Curve \n 5 models concatenation')
+plt.legend(loc="lower right")
 plt.tight_layout()
 plt.savefig(f"{configs.DIR}/results/auc roc 5-model ensemble.png") 
 plt.close()
