@@ -3,7 +3,7 @@ TEST_SIZE = 0.3
 CHANNELS = 3
 HEIGHT = 256
 WIDTH = 256
-SEED = 12345 #for reproductability
+SEED = 12000 #for reproductability
 
 split_train = 0.6
 split_valid = 0.3
