@@ -18,7 +18,7 @@ auc_values = []
 training_accuracy_values = []
 validation_accuracy_values = []
 lw = 2 #line width
-nb_iterations = 20
+nb_iterations = 10
 results = []
 
 df = dataloader.load_data(target_output=configs.target_output)

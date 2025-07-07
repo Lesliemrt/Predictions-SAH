@@ -1,19 +1,16 @@
-import torch
-from torch.utils.data import Dataset
-from torchvision import transforms
 import os
 import pandas as pd
 import numpy as np
-import pydicom
-from albumentations import Compose, Resize, CenterCrop
+import matplotlib.pyplot as plt
 import cv2
 import csv
-
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import configs
 import utils
 
 # to understand the data we have for multi classes
-df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='completa_datos')
+df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
 
 def histo(label):
     data=df[label]
@@ -23,6 +20,7 @@ def histo(label):
     q2 = serie.quantile(2/3)
 
     # Affichage des bornes
+    print(f'Label : {label}')
     print(f"Groupe 1 : <= {q1:.2f}")
     print(f"Groupe 2 : > {q1:.2f} et <= {q2:.2f}")
     print(f"Groupe 3 : > {q2:.2f}")
@@ -36,6 +34,8 @@ def histo(label):
     plt.ylabel("Fréquence")
     plt.legend()
     plt.grid(True)
-    plt.show()
+    plt.savefig(f"{configs.DIR}/results/histogram - {label}.png") 
+    plt.close()
 
 histo('DiasVM')
+histo('DiasUCI')

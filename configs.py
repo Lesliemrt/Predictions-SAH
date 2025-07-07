@@ -3,7 +3,7 @@ TEST_SIZE = 0.3
 CHANNELS = 3
 HEIGHT = 256
 WIDTH = 256
-SEED = 54321 #for reproductability
+SEED = 12345 #for reproductability
 
 split_train = 0.6
 split_valid = 0.3
@@ -25,7 +25,7 @@ DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/'
 # 0-6 : 'mRSalta', 'mRS1año'
 # 0-38+ : 'DiasVM'
 # 0-108+ : 'DiasUCI'
-target_output = 'Infarction'
+target_output = 'ANY Vasoespasm '
 
 # Ro run on gpu if available
 import torch

@@ -132,6 +132,12 @@ def load_data(target_output=configs.target_output):
     new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='selected_cortes')
     new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
 
+    # Adding multiple class labels
+    new_label_df['HSA'] = new_label_df['Path'].apply(lambda x: x.split('/')[configs.patient])
+    multiclass_labels = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
+    multiclass_labels = multiclass_labels[['HSA', 'mRSalta', 'mRS1año', 'DiasVM', 'DiasUCI']]
+    new_label_df = pd.merge(new_label_df, multiclass_labels, on='HSA', how='left')
+
     # Create the DataFrame for the dataset
     data_df = new_label_df[[configs.target_output,'Path']]
     # data_df = data_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
