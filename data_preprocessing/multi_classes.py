@@ -27,11 +27,11 @@ def histo(label):
 
     # Construction de l'histogramme
     plt.hist(serie, bins=10, edgecolor='black')
-    plt.axvline(q1, color='r', linestyle='dashed', linewidth=1.5, label=f'1er tiers ({q1:.2f})')
-    plt.axvline(q2, color='g', linestyle='dashed', linewidth=1.5, label=f'2e tiers ({q2:.2f})')
-    plt.title("Histogramme des durées")
-    plt.xlabel("Durée (jours)")
-    plt.ylabel("Fréquence")
+    plt.axvline(q1, color='r', linestyle='dashed', linewidth=1.5, label=f'1st tertile ({q1:.2f})')
+    plt.axvline(q2, color='g', linestyle='dashed', linewidth=1.5, label=f'2nd tertile ({q2:.2f})')
+    plt.title("Histogram")
+    plt.xlabel("Time (days)")
+    plt.ylabel("Frequency")
     plt.legend()
     plt.grid(True)
     plt.savefig(f"{configs.DIR}/results/histogram - {label}.png") 
