@@ -9,7 +9,7 @@ import dataloader
 import utils
 import train
 import configs
-from model import get_model, get_model_onnx, Classifier, Classifier_Many_Layers
+from model import get_model, Classifier, Classifier_Many_Layers
 
 print("torch.cuda.is_available()", torch.cuda.is_available()) 
 
@@ -22,15 +22,15 @@ torch.backends.cudnn.benchmark = False
 
 # Load data
 df = dataloader.load_data(target_output=configs.target_output)
-train_patients, valid_patients, test_patients = dataloader.split_data(df = df, SEED)
-trainloader, validloader, testloader = dataloader.create_dataloader(df, train_patients, valid_patients, test_patients, target_output=configs.target_output)
+train_patients, valid_patients, test_patients = dataloader.split_data(df = df, random_seed=SEED)
+trainloader, validloader, _ = dataloader.create_dataloader(df, train_patients, valid_patients, test_patients, target_output=configs.target_output)
 
 # Load model
 # prob = prob for dropout
 # model = densenet169 or densenet121 or se_resnext50_32x4d (pretrained on medical for weights from 3rd contest)
 # pretrained = "imagenet"" for pretraining on ImageNet / "medical" for pretraining on Medical Images / False for no training
 # classifier = model.Classifier or model.Classifier_Many_Layers
-model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, metadata = True)
+model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, num_classes = 7, metadata = True)
 # model = get_model_onnx(classifier_class=Classifier, in_features=2664, prob=0.5)
 my_model=Model_extented(model, epochs=5, lr=1e-3)
 

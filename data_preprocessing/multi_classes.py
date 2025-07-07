@@ -21,15 +21,15 @@ def histo(label):
 
     # Affichage des bornes
     print(f'Label : {label}')
-    print(f"Groupe 1 : <= {q1:.2f}")
-    print(f"Groupe 2 : > {q1:.2f} et <= {q2:.2f}")
-    print(f"Groupe 3 : > {q2:.2f}")
+    print(f"Group 1 : <= {q1:.2f}")
+    print(f"Group 2 : > {q1:.2f} and <= {q2:.2f}")
+    print(f"Group 3 : > {q2:.2f}")
 
     # Construction de l'histogramme
     plt.hist(serie, bins=10, edgecolor='black')
     plt.axvline(q1, color='r', linestyle='dashed', linewidth=1.5, label=f'1st tertile ({q1:.2f})')
     plt.axvline(q2, color='g', linestyle='dashed', linewidth=1.5, label=f'2nd tertile ({q2:.2f})')
-    plt.title("Histogram")
+    plt.title(f"Histogram - {label}")
     plt.xlabel("Time (days)")
     plt.ylabel("Frequency")
     plt.legend()
