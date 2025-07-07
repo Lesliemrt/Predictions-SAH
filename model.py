@@ -9,11 +9,14 @@ import utils
 from keras_to_pytorch.densenet_from_IR import KitModel
 
 class Classifier(nn.Module):
-    def __init__(self, in_features, prob):
+    def __init__(self, in_features, prob, num_classes):
         super().__init__()
         self.gap = nn.AdaptiveAvgPool2d(1)
         self.dropout = nn.Dropout(p=prob)
-        self.output = nn.Linear(in_features, 1)
+        if num_classes==2:
+            self.output = nn.Linear(in_features, 1)
+        else : 
+            self.output = nn.Linear(in_features, num_classes)
 
     def forward(self, x):
         # x = self.gap(x)
@@ -25,7 +28,7 @@ class Classifier(nn.Module):
         return x
     
 class Classifier_Many_Layers(nn.Module):
-    def __init__(self, in_features, prob):
+    def __init__(self, in_features, prob, num_classes):
         super().__init__()
         self.gap = nn.AdaptiveAvgPool2d(1)
         self.dropout = nn.Dropout(p=prob)
@@ -36,7 +39,10 @@ class Classifier_Many_Layers(nn.Module):
         self.linear4 = nn.Linear(256, 128)
         self.linear5 = nn.Linear(128, 64)
         self.linear6 = nn.Linear(64, 32)
-        self.linear7 = nn.Linear(32,1)
+        if num_classes==2:
+            self.linear7 = nn.Linear(32,1)
+        else : 
+            self.linear7 = nn.Linear(32,num_classes)
 
     def forward(self, x):
         x = self.linear1(x)
@@ -72,11 +78,12 @@ class MLP(nn.Module):
         return x
 
 class CombineModel(nn.Module):
-    def __init__(self, image_backbone, meta_backbone, classifier, metadata):
+    def __init__(self, image_backbone, meta_backbone, classifier, num_classes, metadata):
         super().__init__()
         self.image_backbone = image_backbone
         self.meta_backbone = meta_backbone
         self.classifier = classifier
+        self.num_classes = num_classes
         self.metadata = metadata
     def forward(self, image, meta):
         image_output = self.image_backbone(image)
@@ -90,7 +97,7 @@ class CombineModel(nn.Module):
             output = self.classifier(image_output)
         return output
 
-def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", classifier=Classifier, metadata = True):    
+def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", classifier=Classifier, num_classes = 2, metadata = True):    
     device = configs.device
 
     if pretrained == False:
@@ -137,10 +144,10 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
 
     meta_backbone = MLP(1000) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
     if metadata == True : 
-        classifier = classifier(3048, prob)  # 2000 = image_output.shape + meta_output.shape
+        classifier = classifier(3048, prob, num_classes)  # 2000 = image_output.shape + meta_output.shape
     else : 
-        classifier = classifier(2048, prob)
-    model = CombineModel(image_backbone, meta_backbone, classifier, metadata)
+        classifier = classifier(2048, prob, num_classes)
+    model = CombineModel(image_backbone, meta_backbone, classifier, num_classes, metadata)
     
     return model
 

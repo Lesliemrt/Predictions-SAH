@@ -25,10 +25,14 @@ class Model_extented(nn.Module):
     def __init__(self,model, epochs,lr):
         super().__init__()
         self.model = model
+        self.num_classes = model.num_classes
         self.epochs = epochs
         self.lr = lr
         self.optim = optim.Adam(self.model.classifier.parameters(), self.lr)
-        self.loss_function = nn.BCEWithLogitsLoss()
+        if self.num_classes == 2:
+            self.loss_function = nn.BCEWithLogitsLoss()
+        else : 
+            self.loss_function = nn.CrossEntropyLoss()
         self.loss_during_training = []
         self.valid_loss_during_training = []
         self.accuracy_during_training = []
@@ -117,7 +121,10 @@ class Model_extented(nn.Module):
                 labels = batch['label']
                 inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
                 outputs = self.forward(image=inputs, meta=meta)
-                probs = torch.sigmoid(outputs)
+                if self.num_classes==2:
+                    probs = torch.sigmoid(outputs)
+                else:
+                    probs = torch.softmax(outputs, dim=1)
 
                 predicted_labels = (probs > 0.5).float() # Get predicted labels based on threshold
                 labels = labels.unsqueeze(1)
@@ -145,7 +152,10 @@ class Model_extented(nn.Module):
                 labels = batch['label']
                 inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
                 outputs = self.forward(image=inputs, meta=meta)
-                probs = torch.sigmoid(outputs)
+                if self.num_classes==2:
+                    probs = torch.sigmoid(outputs)
+                else:
+                    probs = torch.softmax(outputs, dim=1)
                 # print("Max prob in batch:", probs.max().item())
 
                 all_labels.append(labels.cpu())
@@ -171,7 +181,10 @@ class Model_extented(nn.Module):
 
                 img = img.float().unsqueeze(0).to(self.device)
                 output = self.forward(img)
-                probs = torch.sigmoid(output)
+                if self.num_classes==2:
+                    probs = torch.sigmoid(outputs)
+                else:
+                    probs = torch.softmax(outputs, dim=1)
 
                 plt.figure(figsize=(10, 5))
                 img = img.squeeze().permute(1, 2, 0).cpu().numpy()
@@ -199,7 +212,10 @@ class Model_extented(nn.Module):
                 meta = meta[index].float().to(self.device)
 
                 output = self.forward(input_img, meta)
-                probs = torch.sigmoid(output)
+                if self.num_classes==2:
+                    probs = torch.sigmoid(outputs)
+                else:
+                    probs = torch.softmax(outputs, dim=1)
 
                 # Get the class with the highest predicted score
                 score, _ = torch.max(probs, dim=1)
@@ -325,7 +341,10 @@ class Model_extented(nn.Module):
                 labels = batch['label']
                 inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
                 outputs = self.forward(image=inputs, meta=meta)
-                probs = torch.sigmoid(outputs)
+                if self.num_classes==2:
+                    probs = torch.sigmoid(outputs)
+                else:
+                    probs = torch.softmax(outputs, dim=1)
 
                 all_labels.append(labels.cpu())
                 all_probs.append(probs.cpu())
