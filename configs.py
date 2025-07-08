@@ -21,11 +21,12 @@ DATA_DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/Data/'
 DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/'
 
 # Output : 
-# 0-1 : 'Rebleeding, 'VasoespasmoA', 'ANY Vasoespasm ', 'Hydrocephalus', 'Infarction', 'Exitus', 'Epileptic seizure'
-# 0-6 : 'mRSalta', 'mRS1año'
-# 0-38+ : 'DiasVM'
-# 0-108+ : 'DiasUCI'
-target_output = 'mRSalta'
+# 0-1 (num_classes = 2): 'Rebleeding, 'VasoespasmoA', 'ANY Vasoespasm ', 'Hydrocephalus', 'Infarction', 'Exitus', 'Epileptic seizure'
+# 0-6 (num_classes = 7): 'mRSalta', 'mRS1año'
+# 0-38+ (num_classes = 3): 'DiasVM'
+# 0-108+ (num_classes = 3): 'DiasUCI'
+target_output = 'DiasVM'
+num_classes = 3
 
 # Ro run on gpu if available
 import torch

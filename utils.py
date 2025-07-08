@@ -198,3 +198,14 @@ def denormalize(img, means, stds):
     for c in range(3):
         img[c] = img[c] * stds[c] + means[c]
     return img
+
+def config_3_classes(df, label):
+    serie = pd.Series(df[label])
+    q1 = serie.quantile(1/3)
+    q2 = serie.quantile(2/3)
+    df[label] = pd.cut(
+        df[label],
+        bins=[-float("inf"), q1, q2, float("inf")],
+        labels=[0, 1, 2]
+    )
+    return df

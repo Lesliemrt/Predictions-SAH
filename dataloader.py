@@ -136,6 +136,9 @@ def load_data(target_output=configs.target_output):
     new_label_df['HSA'] = new_label_df['Path'].apply(lambda x: x.split('/')[configs.patient])
     multiclass_labels = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
     multiclass_labels = multiclass_labels[['HSA', 'mRSalta', 'mRS1año', 'DiasVM', 'DiasUCI']]
+    multiclass_labels = utils.config_3_classes(multiclass_labels, 'DiasVM')
+    multiclass_labels = utils.config_3_classes(multiclass_labels, 'DiasUCI')
+    multiclass_labels = multiclass_labels[:197] # Delete the last lines of the excel that contains totals
     new_label_df = pd.merge(new_label_df, multiclass_labels, on='HSA', how='left')
 
     # Create the DataFrame for the dataset

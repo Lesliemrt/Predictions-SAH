@@ -59,7 +59,10 @@ class Model_extented(nn.Module):
                 inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device) #model expect float32
                 self.optim.zero_grad()
                 outputs = self.forward(image=inputs, meta=meta)
-                labels = labels.unsqueeze(1)
+                if self.num_classes==2:
+                    labels = labels.unsqueeze(1)
+                else:
+                    labels = labels.long()
                 loss = self.loss_function(outputs, labels)
                 loss.backward()
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
@@ -67,8 +70,12 @@ class Model_extented(nn.Module):
                 self.optim.step()
 
                 # Accuracy
-                probs = torch.sigmoid(outputs)
-                predicted_labels = (probs > 0.3).float() # Get predicted labels based on threshold
+                if self.num_classes==2:
+                    probs = torch.sigmoid(outputs)
+                    predicted_labels = (predicted_labels > 0.3).float() # Get predicted labels based on threshold
+                else:
+                    probs = torch.softmax(outputs, dim=1)
+                    predicted_labels = torch.argmax(probs, dim=1)
                 equals = (predicted_labels == labels) # Compare predicted and actual labels
                 train_accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
 
@@ -86,13 +93,20 @@ class Model_extented(nn.Module):
                     labels = batch['label']
                     inputs, meta, labels = inputs.float().to(self.device), meta.float().to(self.device), labels.float().to(self.device)
                     outputs = self.forward(image = inputs, meta=meta)
-                    labels = labels.unsqueeze(1)
+                    if self.num_classes==2:
+                        labels = labels.unsqueeze(1)
+                    else:
+                        labels = labels.long()
                     loss = self.loss_function(outputs, labels)
                     val_loss += loss.item()
 
                     # Accuracy
-                    probs = torch.sigmoid(outputs)
-                    predicted_labels = (probs > 0.3).float() # Get predicted labels based on threshold
+                    if self.num_classes==2:
+                        probs = torch.sigmoid(outputs)
+                        predicted_labels = (predicted_labels > 0.3).float() # Get predicted labels based on threshold
+                    else:
+                        probs = torch.softmax(outputs, dim=1)
+                        predicted_labels = torch.argmax(probs, dim=1)
                     equals = (predicted_labels == labels) # Compare predicted and actual labels
                     val_accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
 
@@ -123,11 +137,12 @@ class Model_extented(nn.Module):
                 outputs = self.forward(image=inputs, meta=meta)
                 if self.num_classes==2:
                     probs = torch.sigmoid(outputs)
+                    predicted_labels = (probs > 0.5).float() # Get predicted labels based on threshold
+                    labels = labels.unsqueeze(1)
                 else:
                     probs = torch.softmax(outputs, dim=1)
-
-                predicted_labels = (probs > 0.5).float() # Get predicted labels based on threshold
-                labels = labels.unsqueeze(1)
+                    predicted_labels = torch.argmax(probs, dim=1)
+                    labels = labels.long()
                 equals = (predicted_labels == labels) # Compare predicted and actual labels
                 # accuracy += torch.mean(equals.type(torch.FloatTensor)).item() # Calculate accuracy
                 accuracy += torch.mean(equals.float()).item()
@@ -162,8 +177,13 @@ class Model_extented(nn.Module):
                 all_probs.append(probs.cpu())
 
         # Concatenate all batchs
-        all_labels = torch.cat(all_labels).flatten().numpy()
-        all_probs = torch.cat(all_probs).flatten().numpy()
+        if self.num_classes == 2:
+            all_labels = torch.cat(all_labels).flatten().numpy()
+            all_probs = torch.cat(all_probs).flatten().numpy()
+        else : 
+            all_labels = torch.cat(all_labels).numpy()
+            all_probs = torch.cat(all_probs).numpy()   
+
         self.model.train()
         return all_labels, all_probs        
 
@@ -201,21 +221,21 @@ class Model_extented(nn.Module):
     def saliency(self, dataloader, num_images_to_show):
         self.model.eval()
         for i in range(num_images_to_show):
-            for batch in dataloader:
+            for batch in tqdm(dataloader, total=len(dataloader), desc="Saliency"):
                 inputs = batch['image']
                 meta = batch['meta']
                 labels = batch['label']
                 batch_size = inputs.size(0)
-                index = np.random.randint(0, batch_size-1)
+                index = np.random.randint(0, batch_size)
                 input_img = inputs[index].unsqueeze(0).float().to(self.device).detach().clone()
                 input_img.requires_grad = True
                 meta = meta[index].float().to(self.device)
 
                 output = self.forward(input_img, meta)
                 if self.num_classes==2:
-                    probs = torch.sigmoid(outputs)
+                    probs = torch.sigmoid(output)
                 else:
-                    probs = torch.softmax(outputs, dim=1)
+                    probs = torch.softmax(output, dim=1)
 
                 # Get the class with the highest predicted score
                 score, _ = torch.max(probs, dim=1)
@@ -282,43 +302,56 @@ class Model_extented(nn.Module):
         plt.close()
 
     def eval_performance(self, all_labels, all_probs):
-        predicted_labels = (all_probs > 0.5).astype(int)
+        if self.num_classes == 2:
+            predicted_labels = (all_probs > 0.5).astype(int)
+        else : 
+            predicted_labels = np.argmax(all_probs, axis=1)
         print("Classification report at threshold 0.5:")
         print(classification_report(all_labels, predicted_labels))
 
-        roc_auc_score_ = roc_auc_score(all_labels, all_probs)
+        if self.num_classes == 2 :
+            roc_auc_score_ = roc_auc_score(all_labels, all_probs)
+        else : 
+            roc_auc_score_ = roc_auc_score(all_labels, all_probs, multi_class='ovr')
 
-        fpr, tpr, thresholds = roc_curve(all_labels, all_probs) #false positiv rate and true positiv rate
-        roc_auc = auc(fpr, tpr) # same as roc_auc_score but different method
+        if self.num_classes == 2 :
+            fpr, tpr, thresholds = roc_curve(all_labels, all_probs) #false positiv rate and true positiv rate
+            roc_auc = auc(fpr, tpr) # same as roc_auc_score but different method
 
-        plt.figure(figsize=(12, 6))
+            plt.figure(figsize=(12, 6))
 
-        # Plot the curve
-        plt.subplot(1, 2, 1)
-        lw = 2
-        plt.plot(fpr, tpr, color='magenta',
-                lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
-        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title(f'Receiver Operating Characteristic Curve (Seed: {configs.SEED})')
-        plt.legend(loc="lower right")
-        # plt.show()
-        plt.savefig(f"{configs.DIR}/results/auc roc curve.png") 
-        plt.close()
+            # Plot the curve
+            plt.subplot(1, 2, 1)
+            lw = 2
+            plt.plot(fpr, tpr, color='magenta',
+                    lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+            plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+            plt.xlim([0.0, 1.0])
+            plt.ylim([0.0, 1.05])
+            plt.xlabel('False Positive Rate')
+            plt.ylabel('True Positive Rate')
+            plt.title(f'Receiver Operating Characteristic Curve (Seed: {configs.SEED})')
+            plt.legend(loc="lower right")
+            # plt.show()
+            plt.savefig(f"{configs.DIR}/results/auc roc curve.png") 
+            plt.close()
 
         self.model.train()
         return roc_auc_score_
     
     def calibration_plot(self, all_labels, all_probs):
-        all_preds = (all_probs >= 0.5).astype(int)
+
+        if configs.num_classes == 2:
+            all_preds = (all_probs >= 0.3).astype(int)
+            confidence = all_probs
+        else : 
+            all_preds = np.argmax(all_probs, axis=1)
+            confidence = np.max(all_probs, axis=1)
 
         df = pd.DataFrame({
             "true_label": all_labels,
             "pred_label": all_preds,
-            "confidence": all_probs
+            "confidence": confidence
         })
         
         y_true = df.true_label.values

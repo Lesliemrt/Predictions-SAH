@@ -23,14 +23,14 @@ torch.backends.cudnn.benchmark = False
 # Load data
 df = dataloader.load_data(target_output=configs.target_output)
 train_patients, valid_patients, test_patients = dataloader.split_data(df = df, random_seed=SEED)
-trainloader, validloader, _ = dataloader.create_dataloader(df, train_patients, valid_patients, test_patients, target_output=configs.target_output)
+trainloader, validloader, testloader = dataloader.create_dataloader(df, train_patients, valid_patients, test_patients, target_output=configs.target_output)
 
 # Load model
 # prob = prob for dropout
 # model = densenet169 or densenet121 or se_resnext50_32x4d (pretrained on medical for weights from 3rd contest)
 # pretrained = "imagenet"" for pretraining on ImageNet / "medical" for pretraining on Medical Images / False for no training
 # classifier = model.Classifier or model.Classifier_Many_Layers
-model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, num_classes = 7, metadata = True)
+model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, num_classes = configs.num_classes, metadata = True)
 # model = get_model_onnx(classifier_class=Classifier, in_features=2664, prob=0.5)
 my_model=Model_extented(model, epochs=5, lr=1e-3)
 
@@ -72,12 +72,20 @@ print(my_model.saliency(testloader, num_images_to_show=10))
 all_labels, all_probs = my_model.return_outputs(testloader)       
 
 # Save the results
-all_preds = (all_probs >= 0.3).astype(int)
+if configs.num_classes == 2:
+    all_preds = (all_probs >= 0.3).astype(int)
+    confidence = all_probs
+else : 
+    all_preds = np.argmax(all_probs, axis=1)
+    confidence = np.max(all_probs, axis=1)
 df = pd.DataFrame({
     "True label": all_labels,
     "Predicted label": all_preds,
-    "Confidence": all_probs
+    "Confidence": confidence
 })
+if configs.num_classes > 2:
+    class_scores = pd.DataFrame(all_probs, columns=[f"class_{i}" for i in range(all_probs.shape[1])])
+    df = pd.concat([df, class_scores], axis=1)
 df.to_excel(f'{configs.DIR}results/results.xlsx', index=False)
 
 # Auc roc curve
