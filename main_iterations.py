@@ -18,7 +18,7 @@ auc_values = []
 training_accuracy_values = []
 validation_accuracy_values = []
 lw = 2 #line width
-nb_iterations = 10
+nb_iterations = 20
 results = []
 
 df = dataloader.load_data(target_output=configs.target_output)
@@ -83,12 +83,12 @@ plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
-plt.title(f'Receiver Operating Characteristic Curve \n Avg ROC AUC: {avg_roc_auc:.2f}  Max ROC AUC: {max_roc_auc:.2f} ')
+plt.title(f'Receiver Operating Characteristic Curve for {configs.target_output} \n Avg ROC AUC: {avg_roc_auc:.2f}  Max ROC AUC: {max_roc_auc:.2f} ')
 if nb_iterations<11 :
     plt.legend(loc="lower right")
 plt.tight_layout()
 # plt.show()
-plt.savefig(f"{configs.DIR}/results/auc roc iterations.png") 
+plt.savefig(f"{configs.DIR}/results/auc roc iterations {configs.target_output}.png") 
 plt.close()
 
 
@@ -141,9 +141,29 @@ plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
-plt.title(f'Receiver Operating Characteristic Curve \n 5 models concatenation for {configs.target_output} ')
+plt.title(f'Receiver Operating Characteristic Curve \n best 5-models average for {configs.target_output} ')
 plt.legend(loc="lower right")
 plt.tight_layout()
-plt.savefig(f"{configs.DIR}/results/auc roc 5-model ensemble.png") 
+plt.savefig(f"{configs.DIR}/results/auc roc 5-model mean for {configs.target_output}.png.png") 
 plt.close()
-print(f"AUC ROC (5-model ensemble) for {configs.target_output} = {auc_roc:.4f}")
+print(f"AUC ROC (5-model ensemble average) for {configs.target_output} = {auc_roc:.4f}")
+
+# Take the max of predictions
+mean_predictions = np.max(np.stack(all_predictions), axis=0)
+
+# Final auc roc score
+fpr, tpr, _ = roc_curve(labels_ref, mean_predictions) #false positiv rate and true positiv rate
+auc_roc = auc(fpr, tpr) 
+plt.figure()
+plt.plot(fpr, tpr, lw=lw, label=f'(AUC = {auc_roc:.2f})')
+plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title(f'Receiver Operating Characteristic Curve \n best 5-models max for {configs.target_output} ')
+plt.legend(loc="lower right")
+plt.tight_layout()
+plt.savefig(f"{configs.DIR}/results/auc roc 5-model max for {configs.target_output}.png") 
+plt.close()
+print(f"AUC ROC (5-model ensemble average) for {configs.target_output} = {auc_roc:.4f}")

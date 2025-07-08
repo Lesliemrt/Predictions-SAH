@@ -25,8 +25,8 @@ DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/'
 # 0-6 (num_classes = 7): 'mRSalta', 'mRS1año'
 # 0-38+ (num_classes = 3): 'DiasVM'
 # 0-108+ (num_classes = 3): 'DiasUCI'
-target_output = 'DiasVM'
-num_classes = 3
+target_output = 'ANY Vasoespasm '
+num_classes = 2
 
 # Ro run on gpu if available
 import torch

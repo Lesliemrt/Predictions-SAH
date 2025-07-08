@@ -72,7 +72,7 @@ class Model_extented(nn.Module):
                 # Accuracy
                 if self.num_classes==2:
                     probs = torch.sigmoid(outputs)
-                    predicted_labels = (predicted_labels > 0.3).float() # Get predicted labels based on threshold
+                    predicted_labels = (probs > 0.3).float() # Get predicted labels based on threshold
                 else:
                     probs = torch.softmax(outputs, dim=1)
                     predicted_labels = torch.argmax(probs, dim=1)
@@ -103,7 +103,7 @@ class Model_extented(nn.Module):
                     # Accuracy
                     if self.num_classes==2:
                         probs = torch.sigmoid(outputs)
-                        predicted_labels = (predicted_labels > 0.3).float() # Get predicted labels based on threshold
+                        predicted_labels = (probs > 0.3).float() # Get predicted labels based on threshold
                     else:
                         probs = torch.softmax(outputs, dim=1)
                         predicted_labels = torch.argmax(probs, dim=1)
