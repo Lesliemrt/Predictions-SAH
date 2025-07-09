@@ -61,7 +61,7 @@ for k in range(nb_iterations):
     # Save scores and weights
     results.append({'seed': seed, 'auc_roc_val': results_auc_roc[0]})
 
-    path = f"{configs.DIR}checkpoints/model_seed_{seed}_auc_{results_auc_roc[0]:.4f}.pt"
+    path = f"{configs.DIR}checkpoints/model_seed_{seed}_auc_{results_auc_roc[0]:.4f}_output_{configs.target_output}.pt"
     torch.save(model.state_dict(), path)
 
     # To print curves
@@ -93,7 +93,7 @@ plt.close()
 
 
 # Save the list of all models
-path = f"{configs.DIR}checkpoints/auc_roc_val_scores.csv"
+path = f"{configs.DIR}checkpoints/auc_roc_val_scores_{configs.target_output}.csv"
 with open(path, "w", newline="") as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=["seed", "auc_roc_val"])
     writer.writeheader()
@@ -115,7 +115,7 @@ for item in top_5_models:
     seed = item['seed']
     auc_roc_val = item['auc_roc_val']
     model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, metadata=True) #prob = prob for dropout
-    path = f"checkpoints/model_seed_{seed}_auc_{auc_roc_val:.4f}.pt"
+    path = f"checkpoints/model_seed_{seed}_auc_{auc_roc_val:.4f}_output_{configs.target_output}.pt"
     state_dict = torch.load(path, map_location=configs.device)
     model.load_state_dict(state_dict)
     my_model=Model_extented(model, epochs=5, lr=1)
@@ -127,7 +127,7 @@ for item in top_5_models:
         assert np.array_equal(labels_ref, labels)
 
     all_predictions.append(probs)
-
+        
 # Take the mean of predictions
 mean_predictions = np.mean(np.stack(all_predictions), axis=0)
 
@@ -149,10 +149,10 @@ plt.close()
 print(f"AUC ROC (5-model ensemble average) for {configs.target_output} = {auc_roc:.4f}")
 
 # Take the max of predictions
-mean_predictions = np.max(np.stack(all_predictions), axis=0)
+max_predictions = np.max(np.stack(all_predictions), axis=0)
 
 # Final auc roc score
-fpr, tpr, _ = roc_curve(labels_ref, mean_predictions) #false positiv rate and true positiv rate
+fpr, tpr, _ = roc_curve(labels_ref, max_predictions) #false positiv rate and true positiv rate
 auc_roc = auc(fpr, tpr) 
 plt.figure()
 plt.plot(fpr, tpr, lw=lw, label=f'(AUC = {auc_roc:.2f})')

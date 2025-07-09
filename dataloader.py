@@ -214,7 +214,8 @@ def split_data(df, random_seed):
         patient_df,
         test_size=configs.split_test,
         stratify=patient_df[configs.target_output],
-        random_state=configs.SEED  # <- fix seed
+        # random_state=configs.SEED  # <- fix seed
+        random_state=12345
     )
 
     train_size = configs.split_train/(configs.split_valid + configs.split_train)
