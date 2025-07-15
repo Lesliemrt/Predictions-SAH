@@ -316,10 +316,15 @@ def create_dataloader(data_df, train_patients, valid_patients, test_patients, ta
                             transforms=test_augmentation, black_crop=False, subdural_window=True,
                             n_tta=2, augment = False)
     # Create DataLoaders
-    trainloader = DataLoader(train_dataset, batch_size=configs.TRAIN_BATCH_SIZE, shuffle=True, num_workers=16, pin_memory=True)
-    validloader = DataLoader(valid_dataset, batch_size=configs.VALID_BATCH_SIZE, shuffle=False, num_workers=16, pin_memory=True)
-    testloader = DataLoader(test_dataset, batch_size=16, shuffle=False, num_workers=16, pin_memory=True)
-    
+    if configs.device == "cpu":
+        trainloader = DataLoader(train_dataset, batch_size=configs.TRAIN_BATCH_SIZE, shuffle=True, num_workers=0, pin_memory=True)
+        validloader = DataLoader(valid_dataset, batch_size=configs.VALID_BATCH_SIZE, shuffle=False, num_workers=0, pin_memory=True)
+        testloader = DataLoader(test_dataset, batch_size=16, shuffle=False, num_workers=0, pin_memory=True)
+    else : 
+        trainloader = DataLoader(train_dataset, batch_size=configs.TRAIN_BATCH_SIZE, shuffle=True, num_workers=16, pin_memory=True)
+        validloader = DataLoader(valid_dataset, batch_size=configs.VALID_BATCH_SIZE, shuffle=False, num_workers=16, pin_memory=True)
+        testloader = DataLoader(test_dataset, batch_size=16, shuffle=False, num_workers=16, pin_memory=True)
+        
     return trainloader, validloader, testloader
 
 

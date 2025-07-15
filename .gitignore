@@ -18,9 +18,9 @@ results/hospital_data_2_visualization/
 *.h5
 **/__pycache__/
 *.onnx
+*.pth
 keras_to_onnx_converter/
 *.xlsx#
-*.pth
 RadImageNet_pytorch/
 converter_pytorch.py
 densenet169_IR.npy

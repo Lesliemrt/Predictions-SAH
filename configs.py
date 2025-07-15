@@ -13,12 +13,16 @@ TRAIN_BATCH_SIZE = 32
 VALID_BATCH_SIZE = 32
 TEST_BATCH_SIZE = 32
 
-patient = 9 #index of {patiente} in the path (hospital_data_1)
-patient_data2 = 8
-
 # Folders
-DATA_DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/Data/'
-DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/'
+# DATA_DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/Data/'
+# DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/'
+# patient = 9 #index of {patiente} in the path (hospital_data_1)
+# patient_data2 = 8
+DATA_DIR = '/Users/Lesli/Documents/Doc administratif/2024-2025/Madrid/Stage/Predictions-SAH/data/'
+DIR = '/Users/Lesli/Documents/Doc administratif/2024-2025/Madrid/Stage/Predictions-SAH/'
+patient = 12 #index of {patiente} in the path (hospital_data_1)
+patient_data2 = 11
+
 
 # Output : 
 # 0-1 (num_classes = 2): 'Rebleeding', 'VasoespasmA', 'ANY Vasoespasm ', 'Hydrocephalus', 'Infarction', 'Exitus', 'Epileptic seizure'
@@ -31,7 +35,7 @@ num_classes = 2
 # Ro run on gpu if available
 import torch
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu") #to run on gpu if available
-
+device_ids=1
 
 
 

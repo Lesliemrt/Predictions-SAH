@@ -79,7 +79,10 @@ test_augmentation = Compose([
 test_dataset = RSNADatasetTest(predictions_df, img_size, id_colname="SOPInstanceUID",
                             transforms=test_augmentation, black_crop=False, subdural_window=True,
                             n_tta=2)
-test_loader = DataLoader(test_dataset, batch_size=configs.TEST_BATCH_SIZE, shuffle=False, num_workers=16, pin_memory=True)
+if configs.device == "cpu":
+    test_loader = DataLoader(test_dataset, batch_size=configs.TEST_BATCH_SIZE, shuffle=False, num_workers=0, pin_memory=True)
+else:
+    test_loader = DataLoader(test_dataset, batch_size=configs.TEST_BATCH_SIZE, shuffle=False, num_workers=16, pin_memory=True)
 del test_dataset
 # gc.collect()
 
