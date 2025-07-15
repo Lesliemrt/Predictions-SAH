@@ -2,7 +2,6 @@ import torch
 from torch import nn
 from torchvision.models import resnet50, densenet121, densenet169
 from torch.nn import functional as F
-import onnxruntime as rt
 from configs import DATA_DIR, DIR
 import configs
 import utils
@@ -77,6 +76,31 @@ class MLP(nn.Module):
         x = self.linear2(x)
         return x
 
+class EmbedFC(nn.Module):
+    def __init__(self, input_dim, emb_dim):
+        super(EmbedFC, self).__init__()
+        '''
+        This class defines a generic one layer feed-forward neural network for embedding input data of
+        dimensionality input_dim to an embedding space of dimensionality emb_dim.
+        '''
+        self.input_dim = input_dim
+        
+        # define the layers for the network
+        layers = [
+            nn.Linear(input_dim, emb_dim),
+            nn.GELU(),
+            nn.Linear(emb_dim, emb_dim),
+        ]
+        
+        # create a PyTorch sequential model consisting of the defined layers
+        self.model = nn.Sequential(*layers)
+
+    def forward(self, x):
+        # flatten the input tensor
+        x = x.view(-1, self.input_dim)
+        # apply the model layers to the flattened tensor
+        return self.model(x)
+
 class CombineModel(nn.Module):
     def __init__(self, image_backbone, meta_backbone, classifier, num_classes, metadata):
         super().__init__()
@@ -126,15 +150,17 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
             # state_dict = torch.load(f"{DATA_DIR}model_epoch_best_4.pth", map_location=device)['state_dict']
             # state_dict = utils.adapt_name(state_dict)
             # image_backbone.load_state_dict(state_dict, strict=False)
-            image_backbone = KitModel("/export/usuarios01/lmurat/Datos/Predictions-SAH/keras_to_pytorch/densenet_from_IR_weights.npy")
+            image_backbone = KitModel(f"{DIR}keras_to_pytorch/densenet_from_IR_weights.npy")
             image_backbone.classifier = nn.Identity()
         
         if image_backbone == "se_resnext50_32x4d":
-            model_path = "/export/usuarios01/lmurat/Datos/Predictions-SAH/Data/exp16_seres_ep5.pth"
+            model_path = f"{DATA_DIR}exp16_seres_ep5.pth"
             image_backbone = CnnModel(num_classes=6, encoder="se_resnext50_32x4d", pretrained="imagenet", features_only=True)
             image_backbone.load_state_dict(torch.load(model_path,  map_location=device), strict=False)
             image_backbone.to(device)
-            image_backbone = torch.nn.DataParallel(image_backbone, device_ids=[1])
+            # if device!="cpu":
+            #     image_backbone = torch.nn.DataParallel(image_backbone, device_ids=configs.device_ids)
+            #TODO:utiliser image_num_features
             image_num_features = 2048
 
     # Freeze parameters so we don't backprop through them
