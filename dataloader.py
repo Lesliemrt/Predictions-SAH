@@ -410,9 +410,11 @@ class RSNADataset(Dataset):
         #     img_id_pre = cur_idx_row[["post1_SOPInstanceUID"]].fillna(value=img_id).values[0]
         #     img_id_post = cur_idx_row[["post2_SOPInstanceUID"]].fillna(value=img_id_pre).values[0]
         if self.user_window == 1:
-            img = self._get_img(img_id, 1)
-            img_pre = self._get_img(img_id_pre, 2)
-            img_post = self._get_img(img_id_post, 3)
+            img = self._get_img(img_id, 1)[0]
+            img_pre = self._get_img(img_id_pre, 2)[0]
+            img_post = self._get_img(img_id_post, 3)[0]
+
+        img_raw = self._get_img(img_id, 1)[1] # to get the image without windowing for visualisation purpose
         # elif self.user_window == 2:
         #     img_id_prepre = cur_idx_row[["pre2_SOPInstanceUID"]].fillna(img_id_pre).values[0]
         #     img_id_postpost = cur_idx_row[["post2_SOPInstanceUID"]].fillna(img_id_post).values[0]
@@ -468,7 +470,7 @@ class RSNADataset(Dataset):
         # label
         label = torch.tensor(self.labels.iloc[idx], dtype=torch.float32)
 
-        return {'image':img, 'meta':meta, 'label':label}
+        return {'image':img, 'meta':meta, 'label':label, 'image_raw':img_raw}
 
     def _get_img(self, img_id, n):
         # img_path = os.path.join(self.image_path, img_id + self.img_type)
@@ -485,7 +487,7 @@ class RSNADataset(Dataset):
         if image.shape[0] != 512 or image.shape[1] != 512:
             image = cv2.resize(image, (512, 512))
 
-
+        img_raw = image.copy().astype(np.float32)
 
         if self.black_crop:
             try:
@@ -530,7 +532,7 @@ class RSNADataset(Dataset):
 
         image = np.expand_dims(image, axis=2)
 
-        return image
+        return image, img_raw
 
 class RSNADatasetTest(Dataset):
 

@@ -13,7 +13,7 @@ from model import get_model, Classifier, Classifier_Many_Layers
 
 if __name__ == "__main__":
     print("torch.cuda.is_available() : ", torch.cuda.is_available()) 
-    
+
     # For reproductibility
     np.random.seed(SEED)
     torch.manual_seed(SEED)
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     # classifier = model.Classifier or model.Classifier_Many_Layers
     model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, num_classes = configs.num_classes, metadata = True)
     # model = get_model_onnx(classifier_class=Classifier, in_features=2664, prob=0.5)
-    my_model=Model_extented(model, epochs=5, lr=1e-3)
+    my_model=Model_extented(model, epochs=1, lr=1e-3)
 
     # Training
     my_model.trainloop(trainloader, validloader)
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     # print(f"accuracy/len(validloader) : {eval_performance_valid[0]}, recall : {eval_performance_valid[1]}")
 
     # Saliency maps
-    print(my_model.saliency(testloader, num_images_to_show=10))
+    print(my_model.saliency(testloader, num_images_to_show=3))
 
     # Results testloader (to save time)
     all_labels, all_probs = my_model.return_outputs(testloader)       
