@@ -101,6 +101,33 @@ class EmbedFC(nn.Module):
         # apply the model layers to the flattened tensor
         return self.model(x)
 
+# metadata + vecteur image
+# applique embedfc à chaque scalaire metadonnée puis concatene --> matrice meta_embed
+# chaque vecteur et multiplié (dot) à vecteur image puis concatenation --> alpha_0, alpha_1, ..., alpha_l
+# on applique softmax à chaque resultat du dot product --> score d'attentions att_weights
+# output = context_vector = torch.sum(att_weights * meta_embed, dim=1)
+class Embed_Att(nn.Module):
+    def __init__(self, embed_dim):
+        super().__init__()
+        self.embed_dim=embed_dim
+        self.embed_scalar = EmbedFC(1, self.embed_dim)
+    
+    def forward(self, x, h):
+        """
+        x: (batch_size, meta_dim) --> vector metadata
+        h: (batch_size, embed_dim) --> vector image
+        """
+        batch_size, meta_dim = x.shape
+        meta_embed = torch.zeros((batch_size, meta_dim, self.embed_dim), device=configs.device)
+        for b in range(batch_size):
+            for i in range(meta_dim):
+                scalar = x[b, i].unsqueeze(0).unsqueeze(1)  # shape (1, 1)
+                meta_embed[b, i] = self.embed_scalar(scalar)
+        dot_products = torch.sum(meta_embed*h.unsqueeze(1), dim=2)
+        att_weights = torch.softmax(dot_products.float(), dim=1)
+        context_vector = torch.sum(att_weights.unsqueeze(2) * meta_embed, dim=2) 
+        return context_vector
+
 class CombineModel(nn.Module):
     def __init__(self, image_backbone, meta_backbone, classifier, num_classes, metadata):
         super().__init__()
@@ -111,7 +138,7 @@ class CombineModel(nn.Module):
         self.metadata = metadata
     def forward(self, image, meta):
         image_output = self.image_backbone(image)
-        meta_output = self.meta_backbone(meta)
+        meta_output = self.meta_backbone(meta) #TODO : je dois passer au metabackbone image output pour attention
         if meta_output.dim() == 1:
             meta_output = meta_output.unsqueeze(0)
         combined = torch.cat((image_output, meta_output), dim=1)
@@ -174,13 +201,13 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
             param.requires_grad = False
 
     # meta data
-    meta_dim = 1040
+    meta_out_dim = 1040
     meta_backbone = MLP(1040) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
-    # meta_backbone = EmbedFC(8, meta_dim)
+    # TODO : ici pas embedFC ni mlp mais une classe qui prends le vecteur de metadata + vecteur d'image et realise attention
 
     # classifier
     if metadata == True : 
-        classifier = classifier(image_num_features + meta_dim, prob, num_classes)  # 2000 = image_output.shape + meta_output.shape
+        classifier = classifier(image_num_features + meta_out_dim, prob, num_classes)  # 2000 = image_output.shape + meta_output.shape
     else : 
         classifier = classifier(image_num_features, prob, num_classes)
     model = CombineModel(image_backbone, meta_backbone, classifier, num_classes, metadata)
