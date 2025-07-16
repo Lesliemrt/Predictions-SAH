@@ -247,8 +247,9 @@ class Model_extented(nn.Module):
                 # Visualization
                 plt.figure(figsize=(10, 5))
                 plt.subplot(1, 2, 1)
+                #TODO
                 img_raw = batch['image_raw'][index]
-                img = torch.clamp(img_raw, 0, 1)
+                img = img_raw/255
                 img_np = img.detach().cpu().numpy()
                 # img = torch.clamp(input_img, 0, 1)
                 # img_np = img.detach().cpu().squeeze().permute(1, 2, 0).numpy()
