@@ -202,9 +202,9 @@ class Model_extented(nn.Module):
                 img = img.float().unsqueeze(0).to(self.device)
                 output = self.forward(img)
                 if self.num_classes==2:
-                    probs = torch.sigmoid(outputs)
+                    probs = torch.sigmoid(output)
                 else:
-                    probs = torch.softmax(outputs, dim=1)
+                    probs = torch.softmax(output, dim=1)
 
                 plt.figure(figsize=(10, 5))
                 img = img.squeeze().permute(1, 2, 0).cpu().numpy()
