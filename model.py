@@ -127,14 +127,18 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
     if pretrained == False:
         if image_backbone == "densenet169":
             image_backbone = densenet169(pretrained=False)
+            image_num_features = 1664 
         if image_backbone == "densenet121":
             image_backbone = densenet121(pretrained = False)
+            image_num_features = 1024 
 
     if pretrained == "imagenet":
         if image_backbone == "densenet169":
             image_backbone = densenet169(pretrained=True)
+            image_num_features = 1664 
         if image_backbone == "densenet121":
             image_backbone = densenet121(pretrained = True)
+            image_num_features = 1024 
 
     if pretrained == "medical" : 
         if image_backbone == "densenet121":
@@ -143,7 +147,8 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
             missing_keys, unexpected_keys = image_backbone.load_state_dict(state_dict, strict=False)
                         # 4. Afficher ce qui a été ignoré
             print("⚠️ Clés manquantes dans le state_dict (non chargées) :", missing_keys[:10], len(missing_keys))
-            print("⚠️ Clés inattendues (ignorées car pas dans le modèle) :", unexpected_keys[:10], len(unexpected_keys))     
+            print("⚠️ Clés inattendues (ignorées car pas dans le modèle) :", unexpected_keys[:10], len(unexpected_keys))
+            image_num_features = 1024     
         
         if image_backbone == "densenet169":
             # image_backbone = densenet169(pretrained = False)
@@ -152,6 +157,7 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
             # image_backbone.load_state_dict(state_dict, strict=False)
             image_backbone = KitModel(f"{DIR}keras_to_pytorch/densenet_from_IR_weights.npy")
             image_backbone.classifier = nn.Identity()
+            image_num_features = 1664
         
         if image_backbone == "se_resnext50_32x4d":
             model_path = f"{DATA_DIR}exp16_seres_ep5.pth"
@@ -160,7 +166,6 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
             image_backbone.to(device)
             # if device!="cpu":
             #     image_backbone = torch.nn.DataParallel(image_backbone, device_ids=configs.device_ids)
-            #TODO:utiliser image_num_features
             image_num_features = 2048
 
     # Freeze parameters so we don't backprop through them
@@ -168,11 +173,16 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
         for param in image_backbone.parameters():
             param.requires_grad = False
 
-    meta_backbone = MLP(1000) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
+    # meta data
+    meta_dim = 1040
+    meta_backbone = MLP(1040) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
+    # meta_backbone = EmbedFC(8, meta_dim)
+
+    # classifier
     if metadata == True : 
-        classifier = classifier(3048, prob, num_classes)  # 2000 = image_output.shape + meta_output.shape
+        classifier = classifier(image_num_features + meta_dim, prob, num_classes)  # 2000 = image_output.shape + meta_output.shape
     else : 
-        classifier = classifier(2048, prob, num_classes)
+        classifier = classifier(image_num_features, prob, num_classes)
     model = CombineModel(image_backbone, meta_backbone, classifier, num_classes, metadata)
     
     return model
