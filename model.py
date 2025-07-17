@@ -117,6 +117,7 @@ class Embed_Att(nn.Module):
         x: (batch_size, meta_dim) --> vector metadata
         h: (batch_size, embed_dim) --> vector image
         """
+
         batch_size, meta_dim = x.shape
         meta_embed = torch.zeros((batch_size, meta_dim, self.embed_dim), device=configs.device)
         for b in range(batch_size):
@@ -129,16 +130,20 @@ class Embed_Att(nn.Module):
         return context_vector
 
 class CombineModel(nn.Module):
-    def __init__(self, image_backbone, meta_backbone, classifier, num_classes, metadata):
+    def __init__(self, image_backbone, meta_backbone, classifier, num_classes, metadata, attention):
         super().__init__()
         self.image_backbone = image_backbone
         self.meta_backbone = meta_backbone
         self.classifier = classifier
         self.num_classes = num_classes
         self.metadata = metadata
+        self.attention = attention
     def forward(self, image, meta):
         image_output = self.image_backbone(image)
-        meta_output = self.meta_backbone(meta) #TODO : je dois passer au metabackbone image output pour attention
+        if self.attention==True:
+            meta_output = self.meta_backbone(meta, image_output) #TODO : je dois passer au metabackbone image output pour attention
+        else:
+            meta_output = self.meta_backbone(meta)
         if meta_output.dim() == 1:
             meta_output = meta_output.unsqueeze(0)
         combined = torch.cat((image_output, meta_output), dim=1)
@@ -148,7 +153,8 @@ class CombineModel(nn.Module):
             output = self.classifier(image_output)
         return output
 
-def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", classifier=Classifier, num_classes = 2, metadata = True):    
+def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", classifier=Classifier, 
+              num_classes = 2, metadata = True, attention = True):    
     device = configs.device
 
     if pretrained == False:
@@ -201,16 +207,19 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
             param.requires_grad = False
 
     # meta data
-    meta_out_dim = 1040
-    meta_backbone = MLP(1040) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
-    # TODO : ici pas embedFC ni mlp mais une classe qui prends le vecteur de metadata + vecteur d'image et realise attention
+    meta_out_dim = 8
+    embed_dim = int(meta_out_dim/8)
+    if attention == True:
+        meta_backbone = Embed_Att(embed_dim = 2048)
+    else:
+        meta_backbone = MLP(1040) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
 
     # classifier
     if metadata == True : 
         classifier = classifier(image_num_features + meta_out_dim, prob, num_classes)  # 2000 = image_output.shape + meta_output.shape
     else : 
         classifier = classifier(image_num_features, prob, num_classes)
-    model = CombineModel(image_backbone, meta_backbone, classifier, num_classes, metadata)
+    model = CombineModel(image_backbone, meta_backbone, classifier, num_classes, metadata, attention)
     
     return model
 

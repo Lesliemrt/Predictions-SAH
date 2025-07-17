@@ -31,8 +31,8 @@ if __name__ == "__main__":
     # model = densenet169 or densenet121 or se_resnext50_32x4d (pretrained on medical for weights from 3rd contest)
     # pretrained = "imagenet"" for pretraining on ImageNet / "medical" for pretraining on Medical Images / False for no training
     # classifier = model.Classifier or model.Classifier_Many_Layers
-    model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, num_classes = configs.num_classes, metadata = True)
-    # model = get_model_onnx(classifier_class=Classifier, in_features=2664, prob=0.5)
+    model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, 
+                      num_classes = configs.num_classes, metadata = True, attention = True)
     my_model=Model_extented(model, epochs=1, lr=1e-3)
 
     # Training
