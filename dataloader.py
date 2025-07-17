@@ -488,6 +488,9 @@ class RSNADataset(Dataset):
             image = cv2.resize(image, (512, 512))
 
         img_raw = image.copy().astype(np.float32)
+        window_center, window_width, intercept, slope = get_windowing(dataset)
+        img_raw = rescale_image(img_raw, intercept, slope)
+        img_raw = window_image(img_raw, window_center, window_width)
 
         if self.black_crop:
             try:

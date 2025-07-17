@@ -229,7 +229,7 @@ class Model_extented(nn.Module):
                 index = np.random.randint(0, batch_size)
                 input_img = inputs[index].unsqueeze(0).float().to(self.device).detach().clone()
                 input_img.requires_grad = True
-                meta = meta[index].float().to(self.device)
+                meta = meta[index].unsqueeze(0).float().to(self.device)
 
                 output = self.forward(input_img, meta)
                 if self.num_classes==2:
