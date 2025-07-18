@@ -21,7 +21,7 @@ lw = 2 #line width
 nb_iterations = 20
 results = []
 
-df = dataloader.load_data(target_output=configs.target_output)
+df = dataloader.load_data(code_data=1, idx_patient_path=configs.patient, target_output=configs.target_output)
 
 plt.figure()
 for k in range(nb_iterations):
@@ -37,8 +37,9 @@ for k in range(nb_iterations):
     torch.backends.cudnn.benchmark = False
 
     # Load data
-    train_patients, valid_patients, test_patients = dataloader.split_data(df = df, random_seed=seed)
-    trainloader, validloader, _ = dataloader.create_dataloader(df, train_patients, valid_patients, test_patients, target_output=configs.target_output)
+    train_patients, valid_patients, test_patients = dataloader.split_data(df = df, idx_patient_path=configs.patient, random_seed=seed)
+    trainloader, validloader, _ = dataloader.create_dataloader(df, configs.patient, train_patients, valid_patients, test_patients, 
+                                                                    target_output=configs.target_output)
 
     # Load model
     model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, metadata=True) #prob = prob for dropout

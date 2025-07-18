@@ -79,8 +79,8 @@ def ajust_path_data2(identifier):
     path = f"{configs.DATA_DIR}hospital_data_2/{patient}/{id1}/{id2}/{id3}/{image}"
     return path
 
-# Visualize random images from a dataset before training
 def visualize(num_images_to_show, train_df):
+    """Visualize random images from a dataset before training"""
     _ , axs = plt.subplots(1, num_images_to_show, figsize=(20, 5))
     if num_images_to_show == 1:
         axs = [axs]
@@ -105,8 +105,8 @@ def visualize(num_images_to_show, train_df):
     plt.savefig(f"{configs.DIR}/results/visualize before training.png") 
     plt.close()
 
-# Remove .module dans state_dict and change features to densenet169 so the weights match
 def adapt_name(state_dict):
+    """Remove .module in state_dict and change features to densenet169 so the weights match"""
     new_state_dict = OrderedDict()
     for k, v in state_dict.items():
         name = k.replace('module.', '').replace('densenet169.', 'features.')
@@ -114,7 +114,6 @@ def adapt_name(state_dict):
         new_state_dict[name] = v
     return new_state_dict
 
-# Normalize min max between 0 and 1
 def normalize_min_max(x, min, max):
     return (x - min) / (max - min)
 
@@ -122,66 +121,67 @@ def normalize_min_max_inverted(x, min, max):
     return (max - x) / (max - min)
 
 def collate_remove_none(batch):
-    # Supprime les items où 'image' est None
+    """Supprime les items où 'image' est None"""
     batch = [item for item in batch if item is not None]
     if len(batch) == 0:
         return None
     return default_collate(batch)
 
 
-# Other preprocessing
-def get_first_of_dicom_field_as_int(x):
-    if type(x) == pydicom.multival.MultiValue:
-        return int(x[0])
-    return int(x)
+# # Other preprocessing
+# def get_first_of_dicom_field_as_int(x):
+#     if type(x) == pydicom.multival.MultiValue:
+#         return int(x[0])
+#     return int(x)
 
-def get_id(img_dicom):
-    return str(img_dicom.SOPInstanceUID)
+# def get_id(img_dicom):
+#     return str(img_dicom.SOPInstanceUID)
 
-def get_metadata_from_dicom(img_dicom):
-    metadata = {
-        # "window_center": img_dicom.WindowCenter,
-        # "window_width": img_dicom.WindowWidth,
-        "intercept": img_dicom.RescaleIntercept,
-        "slope": img_dicom.RescaleSlope,
-    }
-    return {k: get_first_of_dicom_field_as_int(v) for k, v in metadata.items()}
+# def get_metadata_from_dicom(img_dicom):
+#     metadata = {
+#         # "window_center": img_dicom.WindowCenter,
+#         # "window_width": img_dicom.WindowWidth,
+#         "intercept": img_dicom.RescaleIntercept,
+#         "slope": img_dicom.RescaleSlope,
+#     }
+#     return {k: get_first_of_dicom_field_as_int(v) for k, v in metadata.items()}
 
-def window_image_new(img, window_center, window_width, intercept, slope):
-    img = img.astype(np.float32) * slope + intercept
-    img_min = window_center - window_width // 2
-    img_max = window_center + window_width // 2
-    img = np.clip(img, img_min, img_max)
-    return img 
+# def window_image_new(img, window_center, window_width, intercept, slope):
+#     img = img.astype(np.float32) * slope + intercept
+#     img_min = window_center - window_width // 2
+#     img_max = window_center + window_width // 2
+#     img = np.clip(img, img_min, img_max)
+#     return img 
 
-def normalize_minmax(img):
-    mi, ma = img.min(), img.max()
-    return (img - mi) / (ma - mi)
+# def normalize_minmax(img):
+#     mi, ma = img.min(), img.max()
+#     return (img - mi) / (ma - mi)
 
-def _read_new(img_path):
-    img_dicom = pydicom.dcmread(img_path)
-    metadata = get_metadata_from_dicom(img_dicom)
-    raw_img = img_dicom.pixel_array
+# def _read_new(img_path):
+#     img_dicom = pydicom.dcmread(img_path)
+#     metadata = get_metadata_from_dicom(img_dicom)
+#     raw_img = img_dicom.pixel_array
 
-    # 3 standard windows for head CT
-    windows = [
-        {"center": 40, "width": 80},    # brain
-        {"center": 80, "width": 200},   # subdural
-        {"center": 40, "width": 380}    # soft tissue
-    ]
+#     # 3 standard windows for head CT
+#     windows = [
+#         {"center": 40, "width": 80},    # brain
+#         {"center": 80, "width": 200},   # subdural
+#         {"center": 40, "width": 380}    # soft tissue
+#     ]
 
-    channels = []
-    for win in windows:
-        img = window_image_new(raw_img, win["center"], win["width"], **metadata)
-        img = normalize_minmax(img) * 255.0
-        img_tensor = torch.tensor(img, dtype=torch.float32)
-        channels.append(img_tensor)
+#     channels = []
+#     for win in windows:
+#         img = window_image_new(raw_img, win["center"], win["width"], **metadata)
+#         img = normalize_minmax(img) * 255.0
+#         img_tensor = torch.tensor(img, dtype=torch.float32)
+#         channels.append(img_tensor)
 
-    img = torch.stack(channels)  # Shape: [3, H, W]
-    return img
+#     img = torch.stack(channels)  # Shape: [3, H, W]
+#     return img
 
-# to extract ["PatientID", "SOPInstanceUID", "SeriesInstanceUID", "ImagePositionPatient2"]
+
 def extract_dicom_info(dcm_path):
+    """ to extract ["PatientID", "SOPInstanceUID", "SeriesInstanceUID", "ImagePositionPatient2"]"""
     try:
         dcm = pydicom.dcmread(dcm_path, stop_before_pixels=True)
         patient_id = dcm.PatientID

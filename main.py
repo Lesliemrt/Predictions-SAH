@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import torch
 import pandas as pd
 
-from configs import SEED
 from train import Model_extented
 import dataloader
 import utils
@@ -13,6 +12,7 @@ from model import get_model, Classifier, Classifier_Many_Layers
 
 if __name__ == "__main__":
     print("torch.cuda.is_available() : ", torch.cuda.is_available()) 
+    SEED = 54792 # of configs.SEED
 
     # For reproductibility
     np.random.seed(SEED)
@@ -21,19 +21,15 @@ if __name__ == "__main__":
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    # Load data
-    df = dataloader.load_data(target_output=configs.target_output)
-    train_patients, valid_patients, test_patients = dataloader.split_data(df = df, random_seed=SEED)
-    trainloader, validloader, testloader = dataloader.create_dataloader(df, train_patients, valid_patients, test_patients, target_output=configs.target_output)
-
+    # Load data 
+    df = dataloader.load_data(code_data=1, idx_patient_path=configs.patient, target_output=configs.target_output)
+    train_patients, valid_patients, test_patients = dataloader.split_data(df = df, idx_patient_path=configs.patient, random_seed=SEED)
+    trainloader, validloader, testloader = dataloader.create_dataloader(df, configs.patient, train_patients, valid_patients, test_patients, 
+                                                                    target_output=configs.target_output)
     # Load model
-    # prob = prob for dropout
-    # model = densenet169 or densenet121 or se_resnext50_32x4d (pretrained on medical for weights from 3rd contest)
-    # pretrained = "imagenet"" for pretraining on ImageNet / "medical" for pretraining on Medical Images / False for no training
-    # classifier = model.Classifier or model.Classifier_Many_Layers
     model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, 
                       num_classes = configs.num_classes, metadata = True, attention = True)
-    my_model=Model_extented(model, epochs=1, lr=1e-3)
+    my_model=Model_extented(model, epochs=5, lr=1e-3)
 
     # Training
     my_model.trainloop(trainloader, validloader)

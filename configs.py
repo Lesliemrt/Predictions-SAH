@@ -3,7 +3,7 @@ TEST_SIZE = 0.3
 CHANNELS = 3
 HEIGHT = 256
 WIDTH = 256
-SEED = 30031 #for reproductability
+SEED = 12345 #for reproductability
 
 split_train = 0.6
 split_valid = 0.3
@@ -29,7 +29,7 @@ patient_data2 = 11
 # 0-6 (num_classes = 7): 'mRSalta', 'mRS1año'
 # 0-38+ (num_classes = 3): 'DiasVM'
 # 0-108+ (num_classes = 3): 'DiasUCI'
-target_output = 'ANY Vasoespasm '
+target_output = 'Exitus'
 num_classes = 2
 
 # Ro run on gpu if available

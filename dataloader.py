@@ -125,16 +125,27 @@ class TestDataset(Dataset):
         return {'image':image, 'label':label}
 
 
-"""TRAINING VALID AND TEST DATASET   (hospital_data_1)"""
+"""TRAINING VALID AND TEST DATASET"""
 
-def load_data(target_output=configs.target_output):
+def load_data(code_data=1, idx_patient_path=configs.patient, target_output=configs.target_output):
+    """ return data frame with patient number, path, metadata, labels for differents outputs, dicom informations
+        code data = 1 for hospital_data_1, 2 for hospital_data_2 (2nd cohort)
+        idx_patient_path = index of patient number in the path"""
+
     # Read the excel with label
-    new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='selected_cortes')
-    new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
+    if code_data==1:
+        new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='selected_cortes')
+        new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
+    elif code_data==2:
+        new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='selected_cortes')
+        new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path_data2)
 
     # Adding multiple class labels
-    new_label_df['HSA'] = new_label_df['Path'].apply(lambda x: x.split('/')[configs.patient])
-    multiclass_labels = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
+    new_label_df['HSA'] = new_label_df['Path'].apply(lambda x: x.split('/')[idx_patient_path])
+    if code_data==1:
+        multiclass_labels = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
+    elif code_data==2:
+        multiclass_labels = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='datos hospital')
     multiclass_labels = multiclass_labels[['HSA', 'mRSalta', 'mRS1año', 'DiasVM', 'DiasUCI']]
     multiclass_labels = utils.config_3_classes(multiclass_labels, 'DiasVM')
     multiclass_labels = utils.config_3_classes(multiclass_labels, 'DiasUCI')
@@ -142,16 +153,15 @@ def load_data(target_output=configs.target_output):
     new_label_df = pd.merge(new_label_df, multiclass_labels, on='HSA', how='left')
 
     # Create the DataFrame for the dataset
-    data_df = new_label_df[[configs.target_output,'Path']]
-    # data_df = data_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
+    data_df = new_label_df[[target_output,'Path']]
 
     # Remove unexistant file/ path from data_df : 
-    count_0 = len(data_df[data_df[configs.target_output] == 0])
-    count_1 = len(data_df[data_df[configs.target_output] == 1])
+    count_0 = len(data_df[data_df[target_output] == 0])
+    count_1 = len(data_df[data_df[target_output] == 1])
     print("data_df before removing wrong paths : ","count 1 : ", count_1, "count 0 : ", count_0)
     data_df = data_df[data_df['Path'].apply(os.path.exists)]
-    count_0 = len(data_df[data_df[configs.target_output] == 0])
-    count_1 = len(data_df[data_df[configs.target_output] == 1])
+    count_0 = len(data_df[data_df[target_output] == 0])
+    count_1 = len(data_df[data_df[target_output] == 1])
     print("data_df after : ","count 1 : ", count_1, "count 0 : ", count_0)
 
     # Add dicom informations
@@ -161,13 +171,17 @@ def load_data(target_output=configs.target_output):
     data_df["post1_SOPInstanceUID"] = data_df.groupby(["PatientID", "SeriesInstanceUID"])["SOPInstanceUID"].shift(-1)
 
     """DATA FRAME META DATA  (hospital_data_1)"""
-    metadata_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
+    if code_data==1:
+        metadata_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
+    elif code_data==2:
+        metadata_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx2', sheet_name='datos hospital')
     metadata_df = metadata_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'HuntHess', 'WFNS']]
     metadata_df = metadata_df.rename(columns={'Edad':'Age','Sexo':'Sex'})
-    metadata_df = metadata_df[:197] # Delete the last lines of the excel that contains totals
+    metadata_df = metadata_df[:197] # Delete the last lines of the excel that contains totals 
+    #TODO : when 2nd cohort : check if this line is valid
 
     # Add metadata to data_df
-    data_df['HSA'] = data_df['Path'].apply(lambda x: x.split('/')[configs.patient])
+    data_df['HSA'] = data_df['Path'].apply(lambda x: x.split('/')[idx_patient_path])
     data_df = pd.merge(data_df, metadata_df, on='HSA', how='left')
 
     return data_df
@@ -203,19 +217,20 @@ def load_data(target_output=configs.target_output):
 # data2_df['HSA'] = data2_df['Path'].apply(lambda x: x.split('/')[patiente])
 # data2_df = pd.merge(data2_df, metadata2_df, on='HSA', how='left')
 
-def split_data(df, random_seed):
+def split_data(df, idx_patient_path, random_seed, target_output=configs.target_output):
+    """ split data into train, val and test from dataframe from load_data """
+    
     # Stratified split in patients 
     patient_df = df.copy()
-    patient_df["HSA"] = patient_df["Path"].apply(lambda x: x.split('/')[configs.patient])
-    patient_df = patient_df.groupby("HSA")[configs.target_output].max().reset_index()  # patient's label = 1 if at least one image is positive
+    patient_df["HSA"] = patient_df["Path"].apply(lambda x: x.split('/')[idx_patient_path])
+    patient_df = patient_df.groupby("HSA")[target_output].max().reset_index()  # patient's label = 1 if at least one image is positive
 
     # Initial split: test set is fixed once
     train_val_patients, test_patients = train_test_split(
         patient_df,
         test_size=configs.split_test,
-        stratify=patient_df[configs.target_output],
-        # random_state=configs.SEED  # <- fix seed
-        random_state=12345
+        stratify=patient_df[target_output],
+        random_state=configs.SEED  # <- fix seed
     )
 
     train_size = configs.split_train/(configs.split_valid + configs.split_train)
@@ -223,30 +238,27 @@ def split_data(df, random_seed):
     train_patients, valid_patients = train_test_split(
         train_val_patients,
         train_size=train_size,
-        stratify=train_val_patients[configs.target_output],
+        stratify=train_val_patients[target_output],
         random_state=random_seed
     )
 
     print("Train patient values : ")
-    print(train_patients[configs.target_output].value_counts())
+    print(train_patients[target_output].value_counts())
     print("Valid patient values : ")
-    print(valid_patients[configs.target_output].value_counts())
+    print(valid_patients[target_output].value_counts())
     print("Test patient values : ")
-    print(test_patients[configs.target_output].value_counts())
+    print(test_patients[target_output].value_counts())
 
     return train_patients, valid_patients, test_patients
 
 
 # Everything inside create_dataloader to be able to change the seed with main_40_iterations
-def create_dataloader(data_df, train_patients, valid_patients, test_patients, target_output):
+def create_dataloader(data_df, idx_patient_path, train_patients, valid_patients, test_patients, target_output):
 
     # Create DataFrames
-    train_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[configs.patient] in train_patients["HSA"].values)]
-    valid_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[configs.patient] in valid_patients["HSA"].values)]
-    test_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[configs.patient] in test_patients["HSA"].values)]
-
-    # for later to test on new data : 
-    # test_df = data2_df[data2_df['Path'].apply(lambda x: x.split('/')[patient_data2] in data2_df["HSA"].values)]
+    train_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[idx_patient_path] in train_patients["HSA"].values)]
+    valid_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[idx_patient_path] in valid_patients["HSA"].values)]
+    test_df = data_df[data_df['Path'].apply(lambda x: x.split('/')[idx_patient_path] in test_patients["HSA"].values)]
 
     # Oversampling for class 1 (~ 28% of 1) only for training !!
     # Method oversampling 1 (nb class 1 = nb class 0)
@@ -254,10 +266,6 @@ def create_dataloader(data_df, train_patients, valid_patients, test_patients, ta
     # df_oversampled = train_df[train_df["ANY_Vasospasm"] == 1].sample(count_0, replace=True, random_state=configs.SEED)
     # df_balanced = pd.concat([train_df[train_df["ANY_Vasospasm"] == 0], df_oversampled])
     # train_df = df_balanced.sample(frac=1, random_state=configs.SEED).reset_index(drop=True)
-    # Method oversampling 2 (double class 1)
-    # vasospasm_df = train_df[train_df["ANY_Vasospasm"] == 1]
-    # train_oversample_df = pd.concat([train_df, vasospasm_df])
-    # train_df = train_oversample_df
 
     count_0 = len(train_df[train_df[target_output] == 0])
     count_1 = len(train_df[train_df[target_output] == 1])
@@ -326,9 +334,6 @@ def create_dataloader(data_df, train_patients, valid_patients, test_patients, ta
         testloader = DataLoader(test_dataset, batch_size=16, shuffle=False, num_workers=16, pin_memory=True)
         
     return trainloader, validloader, testloader
-
-
-
 
 
 

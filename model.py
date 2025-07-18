@@ -127,7 +127,7 @@ class Embed_Att(nn.Module):
         dot_products = torch.sum(meta_embed*h.unsqueeze(1), dim=2)
         att_weights = torch.softmax(dot_products.float(), dim=1)
         context_vector = torch.sum(att_weights.unsqueeze(2) * meta_embed, dim=2) 
-        return context_vector
+        return context_vector, att_weights
 
 class CombineModel(nn.Module):
     def __init__(self, image_backbone, meta_backbone, classifier, num_classes, metadata, attention):
@@ -141,7 +141,7 @@ class CombineModel(nn.Module):
     def forward(self, image, meta):
         image_output = self.image_backbone(image)
         if self.attention==True:
-            meta_output = self.meta_backbone(meta, image_output) #TODO : je dois passer au metabackbone image output pour attention
+            meta_output = self.meta_backbone(meta, image_output)[0]
         else:
             meta_output = self.meta_backbone(meta)
         if meta_output.dim() == 1:
@@ -155,6 +155,15 @@ class CombineModel(nn.Module):
 
 def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", classifier=Classifier, 
               num_classes = 2, metadata = True, attention = True):    
+    """ 
+    prob = prob for dropout in classifier
+    image_backbone = densenet169 or densenet121 or se_resnext50_32x4d (pretrained on medical images,weights from https://github.com/okotaku/kaggle_rsna2019_3rd_solution)
+    pretrained = "imagenet"" for pretraining on ImageNet / "medical" for pretraining on Medical Images / False for no pretraining
+    classifier = model.Classifier or model.Classifier_Many_Layers
+    num_classes = number of classes to predict depending on the output chosen
+    metadata = Boolen
+    attention = Boolen"""
+    
     device = configs.device
 
     if pretrained == False:
@@ -207,12 +216,12 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
             param.requires_grad = False
 
     # meta data
-    meta_out_dim = 8
-    embed_dim = int(meta_out_dim/8)
     if attention == True:
-        meta_backbone = Embed_Att(embed_dim = 2048)
+        meta_backbone = Embed_Att(embed_dim = image_num_features)
+        meta_out_dim = 8
     else:
-        meta_backbone = MLP(1040) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
+        meta_out_dim = 1040
+        meta_backbone = MLP(meta_out_dim) # meta_output.shape = 1000 because image_output.shape = 1000 and must be equal (for same weights)
 
     # classifier
     if metadata == True : 
@@ -223,60 +232,6 @@ def get_model(prob=0.5, image_backbone="densenet169", pretrained="imagenet", cla
     
     return model
 
-
-
-# # For model pretrained by jaymin on dataset RSNA2019 contest    
-# class Densenet169_onnx(nn.Module): 
-#     def __init__(self):
-#         super().__init__()
-#         providers = ['CPUExecutionProvider']
-#         output_path = DATA_DIR + "densenet169_model.onnx"
-#         self.m = rt.InferenceSession(output_path, providers=providers)
-#         self.input_name = self.m.get_inputs()[0].name
-
-#     def forward(self, x):
-#         device = configs.device
-#         x_numpy = x.permute(0, 2, 3, 1).detach().cpu().numpy()
-#         onnx_pred = self.m.run(None, {self.input_name: x_numpy})
-#         features = torch.tensor(onnx_pred[0], dtype=torch.float32, device=device)  # force device
-#         return features
-
-
-# class CombineModel_onnx(nn.Module):
-#     def __init__(self, image_backbone, meta_backbone, classifier):
-#         super().__init__()
-#         self.image_backbone = image_backbone
-#         self.meta_backbone = meta_backbone
-#         self.classifier = classifier
-#     def forward(self, image, meta):
-#         image_output = self.image_backbone(image) # not trainable
-#         meta_output = self.meta_backbone(meta)
-#         if meta_output.dim() == 1:
-#             meta_output = meta_output.unsqueeze(0)
-#         combined = torch.cat((image_output, meta_output), dim=1)
-#         output = self.classifier(combined)
-#         return output
-
-
-# def get_model_onnx(classifier_class=Classifier, in_features=2000, prob=0.5):
-#     image_backbone = Densenet169_onnx()
-#     meta_backbone = MLP(1000)
-#     classifier = classifier_class(in_features, prob)
-#     model = CombineModel_onnx(image_backbone=image_backbone, meta_backbone = meta_backbone, classifier=classifier)
-#     return model
-
-# class Model_6classes_onnx(nn.Module):
-#     def __init__(self, prob, in_features):
-#         super().__init__()
-#         self.base_model = Densenet169_onnx()
-#         self.avgpool = nn.AdaptiveAvgPool2d(1)
-#         self.dropout = nn.Dropout(p=prob)
-#         self.linear = nn.Linear(in_features, 6)
-#     def forward(self, x):
-#         x = self.base_model(x)
-#         print("Shape base model:", x.shape)
-#         x = self.linear(x)
-#         return x
     
 class DenseNet169_change_avg(nn.Module):
     def __init__(self):
