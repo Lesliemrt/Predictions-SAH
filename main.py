@@ -29,7 +29,7 @@ if __name__ == "__main__":
     # Load model
     model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, 
                       num_classes = configs.num_classes, metadata = True, attention = True)
-    my_model=Model_extented(model, epochs=5, lr=1e-3)
+    my_model=Model_extented(model, epochs=3, lr=1e-3)
 
     # Training
     my_model.trainloop(trainloader, validloader)

@@ -6,7 +6,7 @@ installation of pytorch first for dependencies
 # Files
 ```bash
 ├── README.md
-├── environment.yml
+├── requirement.txt
 ├── configs.py : select target_output and num_classes
 ├── utils.py
 ├── dataloader.py
@@ -14,6 +14,7 @@ installation of pytorch first for dependencies
 ├── train.py : Model_extended class with trainloop
 ├── main.py : to train, get results, loss graph, accuracy, saliency maps, reliability diagramms, auc roc curves
 ├── main_iterations.py : to train x times, get the 5 best models based on validation auc scores and take the mean/ max predictions of the 5 best models
+├── RESULTS : excel file with all the plots
 ├── data/
 │   ├── hospital_data_1/ : 1st cohort of data
 │   ├── hospital_data_2/ : 2nd cohort of data (used for tests)
@@ -26,7 +27,8 @@ installation of pytorch first for dependencies
 │   ├── excel_new_data_prepared.xlsx : results of prepare_new_data.py, predictions.py and choose_slice.py
 │   └── multiclasses.py : histograms for multiclass outputs
 ├── checkpoints/
-└── results/
+├── results/
+└── keras_to_pytorch/ : used to transpose .h5 files to .pth (not used anymore)
 ```
 
 # References
