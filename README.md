@@ -27,7 +27,8 @@ installation of pytorch first for dependencies
 │   ├── excel_new_data_prepared.xlsx : results of prepare_new_data.py, predictions.py and choose_slice.py
 │   └── multiclasses.py : histograms for multiclass outputs
 ├── checkpoints/
-├── results/
+├── results/ : automatics plots and images
+├── saliency_maps_exemples/ : saliency maps from a model with good performances train on the output "Exitus"
 └── keras_to_pytorch/ : used to transpose .h5 files to .pth (not used anymore)
 ```
 
