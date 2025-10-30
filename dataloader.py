@@ -137,7 +137,7 @@ def load_data(code_data=1, idx_patient_path=configs.patient, target_output=confi
         new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='selected_cortes')
         new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
     elif code_data==2:
-        new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='selected_cortes')
+        new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='selected_slices')
         new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path_data2)
 
     # Adding multiple class labels
@@ -145,7 +145,7 @@ def load_data(code_data=1, idx_patient_path=configs.patient, target_output=confi
     if code_data==1:
         multiclass_labels = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
     elif code_data==2:
-        multiclass_labels = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='datos hospital')
+        multiclass_labels = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='completa_datos')
     multiclass_labels = multiclass_labels[['HSA', 'mRSalta', 'mRS1año', 'DiasVM', 'DiasUCI']]
     multiclass_labels = utils.config_3_classes(multiclass_labels, 'DiasVM')
     multiclass_labels = utils.config_3_classes(multiclass_labels, 'DiasUCI')
@@ -170,15 +170,15 @@ def load_data(code_data=1, idx_patient_path=configs.patient, target_output=confi
     data_df["pre1_SOPInstanceUID"] = data_df.groupby(["PatientID", "SeriesInstanceUID"])["SOPInstanceUID"].shift(1)
     data_df["post1_SOPInstanceUID"] = data_df.groupby(["PatientID", "SeriesInstanceUID"])["SOPInstanceUID"].shift(-1)
 
-    """DATA FRAME META DATA  (hospital_data_1)"""
+    """DATA FRAME META DATA"""
     if code_data==1:
         metadata_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
+        metadata_df = metadata_df.rename(columns={'Edad':'Age','Sexo':'Sex'})
+        metadata_df = metadata_df[:197] # Delete the last lines of the excel that contains totals 
     elif code_data==2:
-        metadata_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx2', sheet_name='datos hospital')
+        metadata_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='completa_datos')
+        metadata_df = metadata_df.rename(columns={'Edad':'Age','Sexo':'Sex'})
     metadata_df = metadata_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'HuntHess', 'WFNS']]
-    metadata_df = metadata_df.rename(columns={'Edad':'Age','Sexo':'Sex'})
-    metadata_df = metadata_df[:197] # Delete the last lines of the excel that contains totals 
-    #TODO : when 2nd cohort : check if this line is valid
 
     # Add metadata to data_df
     data_df['HSA'] = data_df['Path'].apply(lambda x: x.split('/')[idx_patient_path])
@@ -186,36 +186,6 @@ def load_data(code_data=1, idx_patient_path=configs.patient, target_output=confi
 
     return data_df
 
-
-# for later to test on new data : 
-# """TRAINING VALID AND TEST DATASET   (hospital_data_2)"""
-# # Read the excel with label
-# new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='selected_cortes')
-# new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path_data2)
-
-# # Create the DataFrame for the dataset
-# data2_df = new_label_df[[configs.target_output,'Path']]
-# data2_df = data2_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
-
-# # Remove unexistant file/ path from data_df : 
-# data2_df = data2_df[data2_df['Path'].apply(os.path.exists)]
-
-# # Stratified split in patients 
-# patient_data2 = configs.patient_data2 #index of {patiente} in the path
-# # patient_df = data_df.copy()
-# # patient_df["HSA"] = patient_df["Path"].apply(lambda x: x.split('/')[patiente])
-# # patient_df = patient_df.groupby("HSA")["ANY_Vasospasm"].max().reset_index()  # patient's label = 1 if at least one image is positive
-
-
-# """DATA FRAME META DATA  (hospital_data_2)"""
-# metadata2_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='datos hospital')
-# metadata2_df = metadata2_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'HuntHess', 'WFNS']]
-# metadata2_df = metadata2_df.rename(columns={'Edad':'Age','Sexo':'Sex'})
-# metadata2_df = metadata2_df[:197] # Delete the last lines of the excel that contains totals
-
-# # Add metadata to data_df
-# data2_df['HSA'] = data2_df['Path'].apply(lambda x: x.split('/')[patiente])
-# data2_df = pd.merge(data2_df, metadata2_df, on='HSA', how='left')
 
 def split_data(df, idx_patient_path, random_seed, target_output=configs.target_output):
     """ split data into train, val and test from dataframe from load_data """
@@ -334,6 +304,27 @@ def create_dataloader(data_df, idx_patient_path, train_patients, valid_patients,
         testloader = DataLoader(test_dataset, batch_size=16, shuffle=False, num_workers=16, pin_memory=True)
         
     return trainloader, validloader, testloader
+
+def create_dataloader_predict(data_df, target_output):
+    img_size = 512
+    test_augmentation = Compose([
+        CenterCrop(512 - 50, 512 - 50, p=1.0),
+        Resize(img_size, img_size, p=1)
+    ])
+
+    test_labels = data_df[target_output]
+
+    test_dataset = RSNADataset(data_df, labels = test_labels, img_size= img_size, id_colname="SOPInstanceUID",
+                            transforms=test_augmentation, black_crop=False, subdural_window=True,
+                            n_tta=2, augment = True)
+    
+    # Create DataLoaders
+    if configs.device == "cpu":
+        testloader = DataLoader(test_dataset, batch_size=16, shuffle=False, num_workers=0, pin_memory=True)
+    else : 
+        testloader = DataLoader(test_dataset, batch_size=16, shuffle=False, num_workers=16, pin_memory=True)
+        
+    return testloader
 
 
 
