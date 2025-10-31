@@ -15,7 +15,7 @@ from model import get_model, Classifier, Classifier_Many_Layers
 
 
 if __name__ == "__main__":
-    outputs = ['Rebleeding', 'VasoespasmA', 'ANY Vasoespasm ', 'Hydrocephalus', 'Infarction', 'Exitus', 'Epileptic seizure']
+    outputs = ['Exitus', 'ANY Vasoespasm ', 'VasoespasmA', 'Hydrocephalus', 'Infarction', 'Epileptic seizure', 'Rebleeding']
     for configs.target_output in outputs :
         print(configs.target_output)
 
@@ -89,3 +89,5 @@ if __name__ == "__main__":
         plt.savefig(f"{configs.DIR}results_2nd_test_cohort/auc roc 5-model max for {configs.target_output}.png") 
         plt.close()
         print(f"AUC ROC (5-model ensemble average) for {configs.target_output} = {auc_roc:.4f}")
+
+        #TODO : ajouter autres metriques
