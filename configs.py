@@ -14,14 +14,14 @@ VALID_BATCH_SIZE = 32
 TEST_BATCH_SIZE = 32
 
 # Folders
-# DATA_DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/Data/'
-# DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/'
-# patient = 9 #index of {patiente} in the path (hospital_data_1)
-# patient_data2 = 8
-DATA_DIR = '/Users/Lesli/Documents/Doc administratif/2024-2025/Madrid/Stage/Predictions-SAH/data/'
-DIR = '/Users/Lesli/Documents/Doc administratif/2024-2025/Madrid/Stage/Predictions-SAH/'
-patient = 12 #index of {patiente} in the path (hospital_data_1)
-patient_data2 = 11
+DATA_DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/Data/'
+DIR = '/export/usuarios01/lmurat/Datos/Predictions-SAH/'
+patient = 9 #index of {patiente} in the path (hospital_data_1)
+patient_data2 = 8
+# DATA_DIR = '/Users/Lesli/Documents/Doc administratif/2024-2025/Madrid/Stage/Predictions-SAH/data/'
+# DIR = '/Users/Lesli/Documents/Doc administratif/2024-2025/Madrid/Stage/Predictions-SAH/'
+# patient = 12 #index of {patiente} in the path (hospital_data_1)
+# patient_data2 = 11
 
 
 # Output : 

@@ -18,7 +18,7 @@ auc_values = []
 training_accuracy_values = []
 validation_accuracy_values = []
 lw = 2 #line width
-nb_iterations = 20
+nb_iterations = 10
 results = []
 
 df = dataloader.load_data(code_data=1, idx_patient_path=configs.patient, target_output=configs.target_output)
@@ -42,8 +42,9 @@ for k in range(nb_iterations):
                                                                     target_output=configs.target_output)
 
     # Load model
-    model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, metadata=True) #prob = prob for dropout
-    my_model=Model_extented(model, epochs=5, lr=1e-3)
+    model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, 
+                      num_classes = configs.num_classes, metadata = True, attention = True) 
+    my_model=Model_extented(model, epochs=4, lr=1e-3)
 
     # Training
     my_model.trainloop(trainloader, validloader)
@@ -106,8 +107,8 @@ top_5_models = sorted(results, key=lambda x: x['auc_roc_val'], reverse=True)[:5]
 print("Top 5 models:", top_5_models)
 
 # Split
-train_patients, valid_patients, test_patients = dataloader.split_data(df = df, random_seed=configs.SEED)
-_, _, testloader = dataloader.create_dataloader(df, train_patients, valid_patients, test_patients, target_output=configs.target_output)
+train_patients, valid_patients, test_patients = dataloader.split_data(df = df, idx_patient_path=configs.patient, random_seed=configs.SEED, arget_output=configs.target_output)
+_, _, testloader = dataloader.create_dataloader(df, configs.patient, train_patients, valid_patients, test_patients, target_output=configs.target_output)
 
 # Predict for each 5
 all_predictions = []
@@ -115,7 +116,7 @@ labels_ref = None
 for item in top_5_models:
     seed = item['seed']
     auc_roc_val = item['auc_roc_val']
-    model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, metadata=True) #prob = prob for dropout
+    model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, metadata=True, attention=True) #prob = prob for dropout
     path = f"checkpoints/model_seed_{seed}_auc_{auc_roc_val:.4f}_output_{configs.target_output}.pt"
     state_dict = torch.load(path, map_location=configs.device)
     model.load_state_dict(state_dict)

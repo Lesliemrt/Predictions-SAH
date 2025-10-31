@@ -136,24 +136,37 @@ def load_data(code_data=1, idx_patient_path=configs.patient, target_output=confi
     if code_data==1:
         new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='selected_cortes')
         new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path)
+        new_label_df['HSA'] = new_label_df['Path'].apply(lambda x: x.split('/')[idx_patient_path])
+        # cols = 'Identifier', 'Path', 'HSA', 'Rebleeding', 'VasoespasmA', 'ANY Vasoespasm ', 'Hydrocephalus', 'Infarction', 'Exitus', 'Epileptic seizure'
     elif code_data==2:
-        new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='selected_cortes')
+        new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='selected_slices')
         new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path_data2)
+        new_label_df = new_label_df.rename(columns={'Patient ID':'HSA'})
+        new_label_df = new_label_df[['Identifier', 'Path', 'HSA']]
+        #cols = 'Identifier', 'Path', 'HSA'
 
-    # Adding multiple class labels
-    new_label_df['HSA'] = new_label_df['Path'].apply(lambda x: x.split('/')[idx_patient_path])
+    # Adding multiple class labels / labels
     if code_data==1:
         multiclass_labels = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
+        multiclass_labels = multiclass_labels[['HSA', 'mRSalta', 'mRS1año', 'DiasVM', 'DiasUCI']]
+        multiclass_labels = utils.config_3_classes(multiclass_labels, 'DiasVM')
+        multiclass_labels = utils.config_3_classes(multiclass_labels, 'DiasUCI')
+        multiclass_labels = multiclass_labels[:197] # Delete the last lines of the excel that contains totals
+        new_label_df = pd.merge(new_label_df, multiclass_labels, on='HSA', how='left')
     elif code_data==2:
-        multiclass_labels = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='datos hospital')
-    multiclass_labels = multiclass_labels[['HSA', 'mRSalta', 'mRS1año', 'DiasVM', 'DiasUCI']]
-    multiclass_labels = utils.config_3_classes(multiclass_labels, 'DiasVM')
-    multiclass_labels = utils.config_3_classes(multiclass_labels, 'DiasUCI')
-    multiclass_labels = multiclass_labels[:197] # Delete the last lines of the excel that contains totals
-    new_label_df = pd.merge(new_label_df, multiclass_labels, on='HSA', how='left')
+        labels = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='completa_datos')
+        labels = labels.rename(columns = {'Vasoespasmo Any' : 'ANY Vasoespasm ', 'VasoespasmoA': 'VasoespasmA', 'Hidrocefalia':'Hydrocephalus', 'Infarto':'Infarction', 'Resangrado':'Rebleeding', 'Crisis' : 'Epileptic seizure'})
+        labels = labels[['HSA', 'mRSalta', 'DiasVM', 'DiasUCI', 'Rebleeding', 'VasoespasmA', 'ANY Vasoespasm ', 'Hydrocephalus', 'Infarction', 'Exitus', 'Epileptic seizure']]
+        labels = labels.dropna()
+        labels = labels.reset_index(drop=True)
+        labels = utils.config_3_classes(labels, 'DiasVM')
+        labels = utils.config_3_classes(labels, 'DiasUCI')
+        new_label_df = pd.merge(new_label_df, labels, on='HSA', how='left')
+        new_label_df = new_label_df.dropna()
+        new_label_df = new_label_df.reset_index(drop=True)
 
     # Create the DataFrame for the dataset
-    data_df = new_label_df[[target_output,'Path']]
+    data_df = new_label_df[[target_output,'Path', 'HSA']]
 
     # Remove unexistant file/ path from data_df : 
     count_0 = len(data_df[data_df[target_output] == 0])
@@ -174,48 +187,18 @@ def load_data(code_data=1, idx_patient_path=configs.patient, target_output=confi
     if code_data==1:
         metadata_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx', sheet_name='datos hospital')
     elif code_data==2:
-        metadata_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones.xlsx2', sheet_name='datos hospital')
+        metadata_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='completa_datos')
+        metadata_df = metadata_df.dropna(subset=['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'HuntHess', 'WFNS'])
+        metadata_df = metadata_df.reset_index(drop=True)
     metadata_df = metadata_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'HuntHess', 'WFNS']]
     metadata_df = metadata_df.rename(columns={'Edad':'Age','Sexo':'Sex'})
-    metadata_df = metadata_df[:197] # Delete the last lines of the excel that contains totals 
-    #TODO : when 2nd cohort : check if this line is valid
 
     # Add metadata to data_df
-    data_df['HSA'] = data_df['Path'].apply(lambda x: x.split('/')[idx_patient_path])
+    # data_df['HSA'] = data_df['Path'].apply(lambda x: x.split('/')[idx_patient_path])
     data_df = pd.merge(data_df, metadata_df, on='HSA', how='left')
 
     return data_df
 
-
-# for later to test on new data : 
-# """TRAINING VALID AND TEST DATASET   (hospital_data_2)"""
-# # Read the excel with label
-# new_label_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='selected_cortes')
-# new_label_df['Path'] = new_label_df['Identifier'].apply(utils.ajust_path_data2)
-
-# # Create the DataFrame for the dataset
-# data2_df = new_label_df[[configs.target_output,'Path']]
-# data2_df = data2_df.rename(columns={'ANY Vasoespasm ':'ANY_Vasospasm'})
-
-# # Remove unexistant file/ path from data_df : 
-# data2_df = data2_df[data2_df['Path'].apply(os.path.exists)]
-
-# # Stratified split in patients 
-# patient_data2 = configs.patient_data2 #index of {patiente} in the path
-# # patient_df = data_df.copy()
-# # patient_df["HSA"] = patient_df["Path"].apply(lambda x: x.split('/')[patiente])
-# # patient_df = patient_df.groupby("HSA")["ANY_Vasospasm"].max().reset_index()  # patient's label = 1 if at least one image is positive
-
-
-# """DATA FRAME META DATA  (hospital_data_2)"""
-# metadata2_df = pd.read_excel(f'{configs.DATA_DIR}excel_predicciones2.xlsx', sheet_name='datos hospital')
-# metadata2_df = metadata2_df[['HSA', 'Edad', 'Sexo', 'SAPSII', 'GCS', 'Fisher', 'HuntHess', 'WFNS']]
-# metadata2_df = metadata2_df.rename(columns={'Edad':'Age','Sexo':'Sex'})
-# metadata2_df = metadata2_df[:197] # Delete the last lines of the excel that contains totals
-
-# # Add metadata to data_df
-# data2_df['HSA'] = data2_df['Path'].apply(lambda x: x.split('/')[patiente])
-# data2_df = pd.merge(data2_df, metadata2_df, on='HSA', how='left')
 
 def split_data(df, idx_patient_path, random_seed, target_output=configs.target_output):
     """ split data into train, val and test from dataframe from load_data """
@@ -336,6 +319,26 @@ def create_dataloader(data_df, idx_patient_path, train_patients, valid_patients,
     return trainloader, validloader, testloader
 
 
+def create_dataloader_predict(data_df, target_output):
+    img_size = 512
+    test_augmentation = Compose([
+        CenterCrop(512 - 50, 512 - 50, p=1.0),
+        Resize(img_size, img_size, p=1)
+    ])
+
+    test_labels = data_df[target_output]
+
+    test_dataset = RSNADataset(data_df, labels = test_labels, img_size= img_size, id_colname="SOPInstanceUID",
+                            transforms=test_augmentation, black_crop=False, subdural_window=True,
+                            n_tta=2, augment = True)
+    
+    # Create DataLoaders
+    if configs.device == "cpu":
+        testloader = DataLoader(test_dataset, batch_size=16, shuffle=False, num_workers=0, pin_memory=True)
+    else : 
+        testloader = DataLoader(test_dataset, batch_size=16, shuffle=False, num_workers=16, pin_memory=True)
+        
+    return testloader
 
 
 """ Other Data Loader (from https://github.com/okotaku/kaggle_rsna2019_3rd_solution) """
@@ -469,6 +472,7 @@ class RSNADataset(Dataset):
         wfns = torch.tensor([self.df['WFNS'].iloc[idx]], dtype=torch.float32)
         wfns = utils.normalize_min_max(wfns, 1, 5)
         sex = self.df['Sex'].iloc[idx]
+        # print('type sex : ', idx, sex, type(sex))
         sex = F.one_hot(torch.tensor(sex, dtype=torch.long), num_classes=2).float() # dim = 2
 
         meta = torch.cat([age, sex, saps2, gcs, fisher, hunthess, wfns], dim=0) # dim = 8
