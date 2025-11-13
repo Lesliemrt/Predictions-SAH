@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import torch
 import pandas as pd
 import csv
-from sklearn.metrics import roc_auc_score, roc_curve, auc
+from sklearn.metrics import roc_auc_score, roc_curve, auc, accuracy_score, recall_score
 from albumentations import Compose, Resize, CenterCrop
 
 from train import Model_extented
@@ -15,7 +15,7 @@ from model import get_model, Classifier, Classifier_Many_Layers
 
 
 if __name__ == "__main__":
-    outputs = ['Exitus', 'ANY Vasoespasm ', 'VasoespasmA', 'Hydrocephalus', 'Infarction', 'Epileptic seizure', 'Rebleeding']
+    outputs = ['VasoespasmA', 'ANY Vasoespasm ', 'Exitus', 'Hydrocephalus', 'Infarction', 'Epileptic seizure', 'Rebleeding']
     for configs.target_output in outputs :
         print(configs.target_output)
 
@@ -36,7 +36,9 @@ if __name__ == "__main__":
         for k in range(len(top_5_models)):
             seed = top_5_models.iloc[k]['seed']
             auc_roc_val = top_5_models.iloc[k]['auc_roc_val']
-            model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, metadata=True) #prob = prob for dropout
+            # print("LISTTTTTTTTTTE3")
+            # print(list(torch.load('checkpoints/model_seed_66086_auc_0.7740_output_Exitus.pt').keys())[:30])
+            model = get_model(prob=0.5, image_backbone="se_resnext50_32x4d", pretrained = "medical", classifier=Classifier_Many_Layers, metadata=True, attention =True) #prob = prob for dropout
             path = f"checkpoints/model_seed_{seed:.0f}_auc_{auc_roc_val:.4f}_output_{configs.target_output}.pt"
             state_dict = torch.load(path, map_location=configs.device)
             model.load_state_dict(state_dict)
@@ -50,8 +52,20 @@ if __name__ == "__main__":
 
             all_predictions.append(probs)
                 
-        # Take the mean of predictions
+        # Take the mean of predictions -----------------------------------------------
         mean_predictions = np.mean(np.stack(all_predictions), axis=0)
+
+        print("labels_ref, mean pred ----------------")
+        print(labels_ref)
+        print(mean_predictions)
+
+        # Accuracy, recall
+        # # Save the list of all models
+        # path = f"{configs.DIR}checkpoints/auc_roc_val_scores_{configs.target_output}.csv"
+        # with open(path, "w", newline="") as csvfile:
+        #     writer = csv.DictWriter(csvfile, fieldnames=["seed", "auc_roc_val"])
+        #     writer.writeheader()
+            
 
         # Final auc roc score
         fpr, tpr, _ = roc_curve(labels_ref, mean_predictions) #false positiv rate and true positiv rate
@@ -70,7 +84,7 @@ if __name__ == "__main__":
         plt.close()
         print(f"AUC ROC (5-model ensemble average) for {configs.target_output} = {auc_roc:.4f}")
 
-        # Take the max of predictions
+        # Take the max of predictions ------------------------------------------------------------
         max_predictions = np.max(np.stack(all_predictions), axis=0)
 
         # Final auc roc score
