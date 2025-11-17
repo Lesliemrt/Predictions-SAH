@@ -15,7 +15,7 @@ from model import get_model, Classifier, Classifier_Many_Layers
 
 
 if __name__ == "__main__":
-    outputs = ['VasoespasmA', 'ANY Vasoespasm ', 'Exitus', 'Hydrocephalus', 'Infarction', 'Epileptic seizure', 'Rebleeding']
+    outputs = ['ANY Vasoespasm ', 'Hydrocephalus', 'Infarction', 'Epileptic seizure', 'Rebleeding', 'VasoespasmA', 'Exitus']
     for configs.target_output in outputs :
         print(configs.target_output)
 
