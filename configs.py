@@ -29,7 +29,7 @@ patient_data2 = 8
 # 0-6 (num_classes = 7): 'mRSalta', 'mRS1año'
 # 0-38+ (num_classes = 3): 'DiasVM'
 # 0-108+ (num_classes = 3): 'DiasUCI'
-target_output = 'VasoespasmA'
+target_output = 'Epileptic seizure'
 num_classes = 2
 
 # Ro run on gpu if available
