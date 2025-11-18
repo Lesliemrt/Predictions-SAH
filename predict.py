@@ -16,6 +16,8 @@ from model import get_model, Classifier, Classifier_Many_Layers
 
 if __name__ == "__main__":
     outputs = ['Epileptic seizure', 'VasoespasmA', 'Exitus', 'ANY Vasoespasm ', 'Infarction', 'Rebleeding', 'Hydrocephalus']
+    metrics_mean = pd.DataFrame(columns=["accuracy", "recall", "f1_score"])
+    metrics_max = pd.DataFrame(columns=["accuracy", "recall", "f1_score"])
     for configs.target_output in outputs :
         print(configs.target_output)
 
@@ -72,6 +74,17 @@ if __name__ == "__main__":
         plt.close()
         print(f"AUC ROC (5-model ensemble average) for {configs.target_output} = {auc_roc:.4f}")
 
+        # Accuracy, recall
+        predicted_labels = (mean_predictions > 0.3).float()
+        accuracy = accuracy_score(labels_ref, mean_predictions)
+        recall = recall_score(labels_ref, mean_predictions)
+        f1score = f1_score(labels_ref, mean_predictions)
+
+        metrics_mean[configs.target_output] = [accuracy, recall, f1score]
+
+        print(f"Accuracy : {accuracy}, Recall : {recall}, F1-score : {f1score}")
+        print(metrics_mean)
+
         # Take the max of predictions ------------------------------------------------------------
         max_predictions = np.max(np.stack(all_predictions), axis=0)
 
@@ -93,8 +106,14 @@ if __name__ == "__main__":
         print(f"AUC ROC (5-model ensemble average) for {configs.target_output} = {auc_roc:.4f}")
 
         # Accuracy, recall
+        predicted_labels = (max_predictions > 0.3).float()
         accuracy = accuracy_score(labels_ref, mean_predictions)
         recall = recall_score(labels_ref, mean_predictions)
         f1score = f1_score(labels_ref, mean_predictions)
 
+        metrics_max[configs.target_output] = [accuracy, recall, f1score]
+
         print(f"Accuracy : {accuracy}, Recall : {recall}, F1-score : {f1score}")
+        print(metrics_max)
+
+        
