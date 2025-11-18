@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import torch
 import pandas as pd
 import csv
-from sklearn.metrics import roc_auc_score, roc_curve, auc, accuracy_score, recall_score
+from sklearn.metrics import roc_auc_score, roc_curve, auc, accuracy_score, recall_score, f1_score
 from albumentations import Compose, Resize, CenterCrop
 
 from train import Model_extented
@@ -15,7 +15,7 @@ from model import get_model, Classifier, Classifier_Many_Layers
 
 
 if __name__ == "__main__":
-    outputs = ['ANY Vasoespasm ', 'Hydrocephalus', 'Infarction', 'Epileptic seizure', 'Rebleeding', 'VasoespasmA', 'Exitus']
+    outputs = ['Epileptic seizure', 'VasoespasmA', 'Exitus', 'ANY Vasoespasm ', 'Infarction', 'Rebleeding', 'Hydrocephalus']
     for configs.target_output in outputs :
         print(configs.target_output)
 
@@ -55,18 +55,6 @@ if __name__ == "__main__":
         # Take the mean of predictions -----------------------------------------------
         mean_predictions = np.mean(np.stack(all_predictions), axis=0)
 
-        print("labels_ref, mean pred ----------------")
-        print(labels_ref)
-        print(mean_predictions)
-
-        # Accuracy, recall
-        # # Save the list of all models
-        # path = f"{configs.DIR}checkpoints/auc_roc_val_scores_{configs.target_output}.csv"
-        # with open(path, "w", newline="") as csvfile:
-        #     writer = csv.DictWriter(csvfile, fieldnames=["seed", "auc_roc_val"])
-        #     writer.writeheader()
-            
-
         # Final auc roc score
         fpr, tpr, _ = roc_curve(labels_ref, mean_predictions) #false positiv rate and true positiv rate
         auc_roc = auc(fpr, tpr) 
@@ -104,4 +92,9 @@ if __name__ == "__main__":
         plt.close()
         print(f"AUC ROC (5-model ensemble average) for {configs.target_output} = {auc_roc:.4f}")
 
-        #TODO : ajouter autres metriques
+        # Accuracy, recall
+        accuracy = accuracy_score(labels_ref, mean_predictions)
+        recall = recall_score(labels_ref, mean_predictions)
+        f1score = f1_score(labels_ref, mean_predictions)
+
+        print(f"Accuracy : {accuracy}, Recall : {recall}, F1-score : {f1score}")
