@@ -75,7 +75,8 @@ if __name__ == "__main__":
         print(f"AUC ROC (5-model ensemble average) for {configs.target_output} = {auc_roc:.4f}")
 
         # Accuracy, recall
-        predicted_labels = (mean_predictions > 0.3).float()
+        predicted_labels = (mean_predictions > 0.3)
+        print(predicted_labels)
         accuracy = accuracy_score(labels_ref, mean_predictions)
         recall = recall_score(labels_ref, mean_predictions)
         f1score = f1_score(labels_ref, mean_predictions)
