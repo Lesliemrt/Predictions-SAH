@@ -15,7 +15,7 @@ from model import get_model, Classifier, Classifier_Many_Layers
 
 
 if __name__ == "__main__":
-    outputs = ['Epileptic seizure', 'VasoespasmA', 'Exitus', 'ANY Vasoespasm ', 'Infarction', 'Rebleeding', 'Hydrocephalus']
+    outputs = ['Infarction', 'Rebleeding', 'Epileptic seizure', 'VasoespasmA', 'Exitus', 'ANY Vasoespasm ', 'Hydrocephalus']
     metrics_mean = pd.DataFrame(columns=["accuracy", "recall", "f1_score"])
     metrics_max = pd.DataFrame(columns=["accuracy", "recall", "f1_score"])
     for configs.target_output in outputs :
@@ -75,15 +75,15 @@ if __name__ == "__main__":
         print(f"AUC ROC (5-model ensemble average) for {configs.target_output} = {auc_roc:.4f}")
 
         # Accuracy, recall
-        predicted_labels = (mean_predictions > 0.3)
-        print(predicted_labels)
-        accuracy = accuracy_score(labels_ref, mean_predictions)
-        recall = recall_score(labels_ref, mean_predictions)
-        f1score = f1_score(labels_ref, mean_predictions)
+        predicted_labels = np.where(mean_predictions > 0.5, 1, 0)
+        accuracy = accuracy_score(labels_ref, predicted_labels)
+        recall = recall_score(labels_ref, predicted_labels)
+        f1score = f1_score(labels_ref, predicted_labels)
 
-        metrics_mean[configs.target_output] = [accuracy, recall, f1score]
+        metrics_mean.loc[configs.target_output] = [accuracy, recall, f1score]
 
         print(f"Accuracy : {accuracy}, Recall : {recall}, F1-score : {f1score}")
+        print("Metrics for mean")
         print(metrics_mean)
 
         # Take the max of predictions ------------------------------------------------------------
@@ -107,14 +107,14 @@ if __name__ == "__main__":
         print(f"AUC ROC (5-model ensemble average) for {configs.target_output} = {auc_roc:.4f}")
 
         # Accuracy, recall
-        predicted_labels = (max_predictions > 0.3).float()
-        accuracy = accuracy_score(labels_ref, mean_predictions)
-        recall = recall_score(labels_ref, mean_predictions)
-        f1score = f1_score(labels_ref, mean_predictions)
+        predicted_labels = np.where(max_predictions > 0.5, 1, 0)
+        accuracy = accuracy_score(labels_ref, predicted_labels)
+        recall = recall_score(labels_ref, predicted_labels)
+        f1score = f1_score(labels_ref, predicted_labels)
 
-        metrics_max[configs.target_output] = [accuracy, recall, f1score]
+        metrics_max.loc[configs.target_output] = [accuracy, recall, f1score]
 
         print(f"Accuracy : {accuracy}, Recall : {recall}, F1-score : {f1score}")
+        print("Metrics for max")
         print(metrics_max)
-
         
