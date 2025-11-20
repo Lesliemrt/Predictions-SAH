@@ -75,7 +75,7 @@ if __name__ == "__main__":
         print(f"AUC ROC (5-model ensemble average) for {configs.target_output} = {auc_roc:.4f}")
 
         # Accuracy, recall
-        predicted_labels = np.where(mean_predictions > 0.5, 1, 0)
+        predicted_labels = np.where(mean_predictions > 0.3, 1, 0)
         accuracy = accuracy_score(labels_ref, predicted_labels)
         recall = recall_score(labels_ref, predicted_labels)
         f1score = f1_score(labels_ref, predicted_labels)
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         print(f"AUC ROC (5-model ensemble average) for {configs.target_output} = {auc_roc:.4f}")
 
         # Accuracy, recall
-        predicted_labels = np.where(max_predictions > 0.5, 1, 0)
+        predicted_labels = np.where(max_predictions > 0.3, 1, 0)
         accuracy = accuracy_score(labels_ref, predicted_labels)
         recall = recall_score(labels_ref, predicted_labels)
         f1score = f1_score(labels_ref, predicted_labels)
